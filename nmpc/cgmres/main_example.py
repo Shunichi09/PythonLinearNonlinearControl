@@ -3,17 +3,26 @@ import matplotlib.pyplot as plt
 import math
 
 class SampleSystem():
-    """SampleSystem
-
+    """SampleSystem, this is the simulator
     Attributes
     -----------
-    
+    x_1 : float
+        system state 1
+    x_2 : float
+        system state 2
+    history_x_1 : list
+        time history of system state 1 (x_1)
+    history_x_2 : list
+        time history of system state 2 (x_2)
     """
     def __init__(self, init_x_1=0., init_x_2=0.):
         """
         Palameters
         -----------
-        
+        init_x_1 : float, optional
+            initial value of x_1, default is 0.
+        init_x_2 : float, optional
+            initial value of x_2, default is 0.
         """
         self.x_1 = init_x_1
         self.x_2 = init_x_2
@@ -61,34 +70,40 @@ class SampleSystem():
         """
         Parameters
         ------------
-        
+        y_1 : float
+        y_2 : float
+        u : float
+            system input
         """
         y_dot = y_2
-
         return y_dot
     
     def _func_x_2(self, y_1, y_2, u):
         """
         Parameters
         ------------
-        
+        y_1 : float
+        y_2 : float
+        u : float
+            system input
         """
         y_dot = (1. - y_1**2 - y_2**2) * y_2 - y_1 + u
-
         return y_dot
 
 
 class NMPCSimulatorSystem():
-    """SimulatorSystem for nmpc
-
+    """SimulatorSystem for nmpc, this is the simulator of nmpc
+    the reason why I seperate the real simulator and nmpc's simulator is sometimes the modeling error, disturbance can include in real simulator
     Attributes
     -----------
-    
+    None
+
     """
     def __init__(self):
         """
         Parameters
         -----------
+        None
         """
         pass
 
@@ -96,29 +111,55 @@ class NMPCSimulatorSystem():
         """main
         Parameters
         ------------
-
+        x_1 : float
+            current state
+        x_2 : float
+            current state
+        us : list of float
+            estimated optimal input Us for N steps
+        N : int
+            predict step
+        dt : float
+            sampling time
 
         Returns
         --------
-        x_1s : 
-        x_2s : 
-        lam_1s :
-        lam_2s :  
+        x_1s : list of float
+            predicted x_1s for N steps
+        x_2s : list of float
+            predicted x_2s for N steps
+        lam_1s : list of float
+            adjoint state of x_1s, lam_1s for N steps
+        lam_2s : list of float
+            adjoint state of x_2s, lam_2s for N steps
         """
 
-        x_1s, x_2s = self._calc_predict_states(x_1, x_2, us, N, dt)
-        lam_1s, lam_2s = self._calc_adjoint_states(x_1s, x_2s, us, N, dt)
+        x_1s, x_2s = self._calc_predict_states(x_1, x_2, us, N, dt) # by usin state equation
+        lam_1s, lam_2s = self._calc_adjoint_states(x_1s, x_2s, us, N, dt) # by using adjoint equation
 
         return x_1s, x_2s, lam_1s, lam_2s
 
     def _calc_predict_states(self, x_1, x_2, us, N, dt):
-        """
+        """ 
         Parameters
         ------------
-        predict_t : float
-            predict time
+        x_1 : float
+            current state
+        x_2 : float
+            current state
+        us : list of float
+            estimated optimal input Us for N steps
+        N : int
+            predict step
         dt : float
             sampling time
+            
+        Returns
+        --------
+        x_1s : list of float
+            predicted x_1s for N steps
+        x_2s : list of float
+            predicted x_2s for N steps
         """
         # initial state
         x_1s = [x_1]
@@ -135,17 +176,30 @@ class NMPCSimulatorSystem():
         """
         Parameters
         ------------
-        predict_t : float
-            predict time
+        x_1s : list of float
+            predicted x_1s for N steps
+        x_2s : list of float
+            predicted x_2s for N steps
+        us : list of float
+            estimated optimal input Us for N steps
+        N : int
+            predict step
         dt : float
             sampling time
+            
+        Returns
+        --------
+        lam_1s : list of float
+            adjoint state of x_1s, lam_1s for N steps
+        lam_2s : list of float
+            adjoint state of x_2s, lam_2s for N steps
         """
         # final state
         # final_state_func
         lam_1s = [x_1s[-1]]
         lam_2s = [x_2s[-1]]
 
-        for i in range(N-1, 0, -1):
+        for i in range(N-1, 0, -1): 
             temp_lam_1, temp_lam_2 = self._adjoint_state_with_oylar(x_1s[i], x_2s[i], lam_1s[0] ,lam_2s[0], us[i], dt)
             lam_1s.insert(0, temp_lam_1)
             lam_2s.insert(0, temp_lam_2)
@@ -158,20 +212,28 @@ class NMPCSimulatorSystem():
         pass
 
     def _predict_state_with_oylar(self, x_1, x_2, u, dt):
-        """in this case this function is the same as simulatoe
+        """in this case this function is the same as simulator
         Parameters
         ------------
+        x_1 : float
+            system state
+        x_2 : float
+            system state
         u : float
-            input of system in some cases this means the reference
+            system input
         dt : float in seconds
-            sampling time of simulation, default is 0.01 [s]
+            sampling time
+        Returns
+        --------
+        next_x_1 : float
+            next state, x_1 calculated by using state equation
+        next_x_2 : float
+            next state, x_2 calculated by using state equation
         """
-        # for theta 1, theta 1 dot, theta 2, theta 2 dot
         k0 = [0. for _ in range(2)]
 
         functions = [self.func_x_1, self.func_x_2]
 
-        # solve Runge-Kutta
         for i, func in enumerate(functions):
             k0[i] = dt * func(x_1, x_2, u)
                 
@@ -181,66 +243,161 @@ class NMPCSimulatorSystem():
         return next_x_1, next_x_2
 
     def func_x_1(self, y_1, y_2, u):
-        """
+        """calculating \dot{x_1}
         Parameters
         ------------
-        
+        y_1 : float
+            means x_1
+        y_2 : float
+            means x_2
+        u : float
+            means system input
+        Returns
+        ---------
+        y_dot : float
+            means \dot{x_1}
         """
         y_dot = y_2
-
         return y_dot
     
     def func_x_2(self, y_1, y_2, u):
-        """
+        """calculating \dot{x_2}
         Parameters
         ------------
-        
+        y_1 : float
+            means x_1
+        y_2 : float
+            means x_2
+        u : float
+            means system input
+        Returns
+        ---------
+        y_dot : float
+            means \dot{x_2}
         """
         y_dot = (1. - y_1**2 - y_2**2) * y_2 - y_1 + u
-
         return y_dot
 
     def _adjoint_state_with_oylar(self, x_1, x_2, lam_1, lam_2, u, dt):
         """
+        Parameters
+        ------------
+        x_1 : float
+            system state
+        x_2 : float
+            system state
+        lam_1 : float
+            adjoint state
+        lam_2 : float
+            adjoint state
+        u : float
+            system input
+        dt : float in seconds
+            sampling time
+        Returns
+        --------
+        pre_lam_1 : float
+            pre, 1 step before lam_1 calculated by using adjoint equation
+        pre_lam_2 : float
+            pre, 1 step before lam_2 calculated by using adjoint equation
         """
-        # for theta 1, theta 1 dot, theta 2, theta 2 dot
         k0 = [0. for _ in range(2)]
 
         functions = [self._func_lam_1, self._func_lam_2]
 
-        # solve Runge-Kutta
         for i, func in enumerate(functions):
             k0[i] = dt * func(x_1, x_2, lam_1, lam_2, u)
                 
-        next_lam_1 = lam_1 + k0[0]
-        next_lam_2 = lam_2 + k0[1]
+        pre_lam_1 = lam_1 + k0[0]
+        pre_lam_2 = lam_2 + k0[1]
 
-        return next_lam_1, next_lam_2
+        return pre_lam_1, pre_lam_2
 
     def _func_lam_1(self, y_1, y_2, y_3, y_4, u):
-        """
+        """calculating -\dot{lam_1}
+        Parameters
+        ------------
+        y_1 : float
+            means x_1
+        y_2 : float
+            means x_2
+        y_3 : float
+            means lam_1
+        y_4 : float
+            means lam_2
+        u : float
+            means system input
+        Returns
+        ---------
+        y_dot : float
+            means -\dot{lam_1}
         """
         y_dot = y_1 - (2. * y_1 * y_2 + 1.) * y_4
-
         return y_dot
 
     def _func_lam_2(self, y_1, y_2, y_3, y_4, u):
-        """
+        """calculating -\dot{lam_2}
+        Parameters
+        ------------
+        y_1 : float
+            means x_1
+        y_2 : float
+            means x_2
+        y_3 : float
+            means lam_1
+        y_4 : float
+            means lam_2
+        u : float
+            means system input
+        Returns
+        ---------
+        y_dot : float
+            means -\dot{lam_2}
         """
         y_dot = y_2 + y_3 + (-3. * (y_2**2) - y_1**2 + 1. ) * y_4
-
         return y_dot
 
 class NMPCController_with_CGMRES():
     """
     Attributes
     ------------
-
+    zeta : float
+        gain of optimal answer stability
+    ht : float
+        update value of NMPC this should be decided by zeta
+    tf : float
+        predict time
+    alpha : float
+        gain of predict time
+    N : int
+        predicte step, discritize value
+    threshold : float
+        cgmres's threshold value
+    input_num : int
+        system input length, this should include dummy u and constraint variables
+    max_iteration : int
+        decide by the solved matrix size
+    simulator : NMPCSimulatorSystem class
+    us : list of float
+        estimated optimal system input
+    dummy_us : list of float
+        estimated dummy input
+    raws : list of float
+        estimated constraint variable
+    history_u : list of float
+        time history of actual system input
+    history_dummy_u : list of float
+        time history of actual dummy u
+    history_raw : list of float
+        time history of actual raw
+    history_f : list of float
+        time history of error of optimal
     """
     def __init__(self):
         """
         Parameters
         -----------
+        None
         """
         # parameters
         self.zeta = 100. # 安定化ゲイン
@@ -269,7 +426,20 @@ class NMPCController_with_CGMRES():
 
     def calc_input(self, x_1, x_2, time):
         """
+        Parameters
+        ------------
+        x_1 : float
+            current state
+        x_2 : float
+            current state
+        time : float in seconds
+            now time
+        Returns
+        --------
+        us : list of float
+            estimated optimal system input
         """
+        # calculating sampling time
         dt = self.tf * (1. - np.exp(-self.alpha * time)) / float(self.N)
 
         # x_dot
@@ -282,25 +452,24 @@ class NMPCController_with_CGMRES():
         x_1s, x_2s, lam_1s, lam_2s = self.simulator.calc_predict_and_adjoint_state(x_1 + dx_1, x_2 + dx_2, self.us, self.N, dt)
         
         # Fxt
-        Fxt = self.calc_f(x_1s, x_2s, lam_1s, lam_2s, self.us, self.dummy_us,
+        Fxt = self._calc_f(x_1s, x_2s, lam_1s, lam_2s, self.us, self.dummy_us,
                             self.raws, self.N, dt)
 
         # F
         x_1s, x_2s, lam_1s, lam_2s = self.simulator.calc_predict_and_adjoint_state(x_1, x_2, self.us, self.N, dt)
 
-        F = self.calc_f(x_1s, x_2s, lam_1s, lam_2s, self.us, self.dummy_us,
+        F = self._calc_f(x_1s, x_2s, lam_1s, lam_2s, self.us, self.dummy_us,
                             self.raws, self.N, dt)
 
         right = -self.zeta * F - ((Fxt - F) / self.ht)
 
-        # dus
         du = self.us * self.ht
         ddummy_u = self.dummy_us * self.ht
         draw = self.raws * self.ht
 
         x_1s, x_2s, lam_1s, lam_2s = self.simulator.calc_predict_and_adjoint_state(x_1 + dx_1, x_2 + dx_2, self.us + du, self.N, dt)
 
-        Fuxt = self.calc_f(x_1s, x_2s, lam_1s, lam_2s, self.us + du, self.dummy_us + ddummy_u,
+        Fuxt = self._calc_f(x_1s, x_2s, lam_1s, lam_2s, self.us + du, self.dummy_us + ddummy_u,
                            self.raws + draw, self.N, dt)
 
         left = ((Fuxt - Fxt) / self.ht)
@@ -311,7 +480,7 @@ class NMPCController_with_CGMRES():
         
         vs = np.zeros((self.max_iteration, self.max_iteration + 1)) # 数×iterarion回数
         
-        vs[:, 0] = r0 / r0_norm
+        vs[:, 0] = r0 / r0_norm # 最初の基底を算出
 
         hs = np.zeros((self.max_iteration + 1, self.max_iteration + 1))
 
@@ -325,14 +494,14 @@ class NMPCController_with_CGMRES():
 
             x_1s, x_2s, lam_1s, lam_2s = self.simulator.calc_predict_and_adjoint_state(x_1 + dx_1, x_2 + dx_2, self.us + du, self.N, dt)
 
-            Fuxt = self.calc_f(x_1s, x_2s, lam_1s, lam_2s, self.us + du, self.dummy_us + ddummy_u,
+            Fuxt = self._calc_f(x_1s, x_2s, lam_1s, lam_2s, self.us + du, self.dummy_us + ddummy_u,
                            self.raws + draw, self.N, dt)
 
             Av = (( Fuxt - Fxt) / self.ht)
 
             sum_Av = np.zeros(self.max_iteration)
 
-            for j in range(i + 1):
+            for j in range(i + 1): # グラムシュミットの直交化法です、和を取って差分を取って算出します
                 hs[j, i] = np.dot(Av, vs[:, j])
                 sum_Av = sum_Av + hs[j, i] * vs[:, j]
 
@@ -342,12 +511,8 @@ class NMPCController_with_CGMRES():
 
             vs[:, i+1] = v_est / hs[i+1, i]
 
-            # print("v_est = {0}".format(v_est))
-            
-            inv_hs = np.linalg.pinv(hs[:i+1, :i])
+            inv_hs = np.linalg.pinv(hs[:i+1, :i]) # この辺は教科書（実時間の方）にのっています
             ys = np.dot(inv_hs, r0_norm * e[:i+1])
-
-            # print("ys = {0}".format(ys))
 
             judge_value = r0_norm * e[:i+1] - np.dot(hs[:i+1, :i], ys[:i])
 
@@ -367,10 +532,11 @@ class NMPCController_with_CGMRES():
 
         x_1s, x_2s, lam_1s, lam_2s = self.simulator.calc_predict_and_adjoint_state(x_1, x_2, self.us, self.N, dt)
 
-        F = self.calc_f(x_1s, x_2s, lam_1s, lam_2s, self.us, self.dummy_us,
+        F = self._calc_f(x_1s, x_2s, lam_1s, lam_2s, self.us, self.dummy_us,
                             self.raws, self.N, dt)
 
         print("check F = {0}".format(np.linalg.norm(F)))
+
         # for save
         self.history_f.append(np.linalg.norm(F))
         self.history_u.append(self.us[0])
@@ -379,8 +545,28 @@ class NMPCController_with_CGMRES():
 
         return self.us
 
-    def calc_f(self, x_1s, x_2s, lam_1s, lam_2s, us, dummy_us, raws, N, dt):
-        """ここはケースによって変えるめっちゃ使う
+    def _calc_f(self, x_1s, x_2s, lam_1s, lam_2s, us, dummy_us, raws, N, dt):
+        """
+        Parameters
+        ------------
+        x_1s : list of float
+            predicted x_1s for N steps
+        x_2s : list of float
+            predicted x_2s for N steps
+        lam_1s : list of float
+            adjoint state of x_1s, lam_1s for N steps
+        lam_2s : list of float
+            adjoint state of x_2s, lam_2s for N steps
+        us : list of float
+            estimated optimal system input
+        dummy_us : list of float
+            estimated dummy input
+        raws : list of float
+            estimated constraint variable
+        N : int
+            predict time step
+        dt : float
+            sampling time of system
         """
         F = []
 
@@ -424,11 +610,30 @@ def main():
     f_fig = fig.add_subplot(326)
 
     x_1_fig.plot(np.arange(iteration_num)*dt, plant_system.history_x_1)
+    x_1_fig.set_xlabel("time [s]")
+    x_1_fig.set_ylabel("x_1")
+    
     x_2_fig.plot(np.arange(iteration_num)*dt, plant_system.history_x_2)
+    x_2_fig.set_xlabel("time [s]")
+    x_2_fig.set_ylabel("x_2")
+    
     u_fig.plot(np.arange(iteration_num - 1)*dt, controller.history_u)
+    u_fig.set_xlabel("time [s]")
+    u_fig.set_ylabel("u")
+
     dummy_fig.plot(np.arange(iteration_num - 1)*dt, controller.history_dummy_u)
+    dummy_fig.set_xlabel("time [s]")
+    dummy_fig.set_ylabel("dummy u")
+
     raw_fig.plot(np.arange(iteration_num - 1)*dt, controller.history_raw)
+    raw_fig.set_xlabel("time [s]")
+    raw_fig.set_ylabel("raw")
+
     f_fig.plot(np.arange(iteration_num - 1)*dt, controller.history_f)
+    f_fig.set_xlabel("time [s]")
+    f_fig.set_ylabel("optimal error")
+
+    fig.tight_layout()
 
     plt.show()
 
