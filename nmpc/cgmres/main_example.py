@@ -519,8 +519,8 @@ class NMPCController_with_CGMRES():
             if np.linalg.norm(judge_value) < self.threshold or i == self.max_iteration-1:
                 update_value = np.dot(vs[:, :i-1], ys_pre[:i-1]).flatten()
                 du_new = du + update_value[::3]
-                ddummy_u_new = du + update_value[1::3]
-                draw_new = du + update_value[2::3]
+                ddummy_u_new = ddummy_u + update_value[1::3]
+                draw_new = draw + update_value[2::3]
                 break
 
             ys_pre = ys
