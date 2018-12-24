@@ -1,9 +1,10 @@
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-# nonlinear_control
-Implementing the nonlinear model predictive control, sliding mode control
+# linear_nonlinear_control
+Implementing the linear and nonlinear control theories.
+For an instance, model predictive control, nonlinear model predictive control, sliding mode control etc
 
-# Usage
+# Usage and Details
 you can see the usage in each folder
 
 # Requirement
