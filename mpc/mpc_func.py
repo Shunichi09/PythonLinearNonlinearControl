@@ -84,6 +84,10 @@ class MpcController():
         references :
             the size should have (state length * pre_step)
 
+        References
+        ------------
+
+
         """
         temp_1 = np.dot(self.phi_mat, states)
         temp_2 = np.dot(self.gamma_mat, self.history_us[-1])
@@ -98,6 +102,11 @@ class MpcController():
             """
             """
             return np.dot(dt_us.T, np.dot(H, dt_us)) - np.dot(G.T, dt_us)
+
+        def constraint_func():
+            """
+            """
+            return 
 
         init_dt_us = np.zeros(self.pre_step)
 
