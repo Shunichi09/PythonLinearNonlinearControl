@@ -9,11 +9,46 @@ class MpcController():
     """
     Attributes
     ------------
-
+    A : numpy.ndarray
+        system matrix
+    B : numpy.ndarray
+        input matrix
+    Q : numpy.ndarray
+        evaluation function weight
+    R : numpy.ndarray
+        evaluation function weight
+    pre_step : int
+        prediction step
+    dt_input_upper : numpy.ndarray
+        constraints of input dt
+    dt_input_lower : numpy.ndarray
+        constraints of input dt
+    input_upper : numpy.ndarray
+        constraints of input
+    input_lower : numpy.ndarray
+        constraints of input
+    history_
     """
-
     def __init__(self, A, B, Q, R, pre_step, initial_input=None, dt_input_upper=None, dt_input_lower=None, input_upper=None, input_lower=None):
         """
+        A : numpy.ndarray
+            system matrix
+        B : numpy.ndarray
+            input matrix
+        Q : numpy.ndarray
+            evaluation function weight
+        R : numpy.ndarray
+            evaluation function weight
+        pre_step : int
+            prediction step
+        dt_input_upper : numpy.ndarray
+            constraints of input dt
+        dt_input_lower : numpy.ndarray
+            constraints of input dt
+        input_upper : numpy.ndarray
+            constraints of input
+        input_lower : numpy.ndarray
+            constraints of input
         """
         self.A = np.array(A)
         self.B = np.array(B)
@@ -34,22 +69,19 @@ class MpcController():
             self.history_us = [initial_input]
 
         # constraints
-        if dt_input_lower in not None:
-            self.dt_input_lower = dt_input_lower
+        self.dt_input_lower = dt_input_lower
+        self.dt_input_upper = dt_input_upper
+        self.input_upper = input_upper
+        self.input_lower = input_lower
 
-        if dt_input_upper in not None:
-            self.dt_input_upper = dt_input_upper
-        
-        if input_upper in not None:
-            self.input_upper = input_upper
-        
-        if input_lower in not None:
-            self.input_lower = input_lower
+        self.W = None
+        self.omega = None
+        self.F = None
+        self.f = None
         
     def initialize_controller(self):
         """
-        make matrix to calculate optimal controller
-
+        make matrix to calculate optimal control input
         """
         A_factorials = [self.A]
 
@@ -90,21 +122,69 @@ class MpcController():
         self.Qs = np.diag(diag_Qs.flatten())
         self.Rs = np.diag(diag_Rs.flatten())
 
-        print("Qs = {0}".format(self.Qs))
-        print("Rs = {0}".format(self.Rs))
+        print("Qs = \n{0}".format(self.Qs))
+        print("Rs = \n{0}".format(self.Rs))
 
         # constraints
-        # dt U
-        F = np.array([[], [], []])
+        # about dt U
+        if self.input_lower is not None:
+            # initialize
+            self.F = np.zeros((self.input_size * 2, self.pre_step * self.input_size))
+            for i in range(self.input_size):
+                self.F[i * 2: (i + 1) * 2, i] = np.array([1.,  -1.])
+                temp_F = copy.deepcopy(self.F)
 
-        # u
+            print("F = \n{0}".format(self.F))
 
+            for i in range(self.pre_step - 1):
+                temp_F = copy.deepcopy(temp_F)
 
-        # state
+                for j in range(self.input_size):
+                    temp_F[j * 2: (j + 1) * 2, ((i+1) * self.input_size) + j] = np.array([1.,  -1.])
+                
+                self.F = np.vstack((self.F, temp_F))
 
+            self.F1 = self.F[:, :self.input_size]
+            
+            temp_f = []
+
+            for i in range(self.input_size):
+                temp_f.append(-1 * self.input_upper[i])
+                temp_f.append(self.input_lower[i])
+
+            self.f = np.array([temp_f for _ in range(self.pre_step)]).flatten()
+
+            print("F = \n{0}".format(self.F))
+            print("F1 = \n{0}".format(self.F1))
+            print("f = \n{0}".format(self.f))
+
+        # about dt_u
+        if self.dt_input_lower is not None:
+            self.W = np.zeros((2, self.pre_step * self.input_size))
+            self.W[:, 0] = np.array([1.,  -1.])
+
+            for i in range(self.pre_step * self.input_size - 1):
+                temp_W = np.zeros((2, self.pre_step * self.input_size))
+                temp_W[:, i+1] = np.array([1.,  -1.])
+                self.W = np.vstack((self.W, temp_W))
+
+            temp_omega = []
+
+            for i in range(self.input_size):
+                temp_omega.append(self.dt_input_upper[i])
+                temp_omega.append(-1. * self.dt_input_lower[i])
+
+            self.omega = np.array([temp_omega for _ in range(self.pre_step)]).flatten()
+
+            print("W = \n{0}".format(self.W))
+            print("omega = \n{0}".format(self.omega))
+
+        # about state
+        print("check the matrix!! if you think rite, plese push enter")
+        input()
 
     def calc_input(self, states, references):
-        """
+        """calculate optimal input
         Parameters
         -----------
         states : numpy.array
@@ -114,8 +194,8 @@ class MpcController():
 
         References
         ------------
-
-
+        opt_input : numpy.ndarray
+            optimal input, size is (1, input_length)
         """
         temp_1 = np.dot(self.phi_mat, states.reshape(-1, 1))
         temp_2 = np.dot(self.gamma_mat, self.history_us[-1].reshape(-1, 1))
@@ -126,25 +206,67 @@ class MpcController():
 
         H = np.dot(self.theta_mat.T, np.dot(self.Qs, self.theta_mat)) + self.Rs
 
+        # constraints
+        A = [] 
+        b = []
+
+        if self.W is not None:
+            A.append(self.W)
+            b.append(self.omega.reshape(-1, 1))
+
+        if self.F is not None:
+            b_F = - np.dot(self.F1, self.history_us[-1].reshape(-1, 1)) - self.f.reshape(-1, 1)
+            A.append(self.F)
+            b.append(b_F)
+
+        A = np.array(A).reshape(-1, self.input_size * self.pre_step)
+        b = np.array(b).reshape(-1, 1)
+
         def optimized_func(dt_us):
             """
             """
-            return np.dot(dt_us.flatten(), np.dot(H, dt_us)) - np.dot(G.T, dt_us)
+            temp_dt_us = np.array([dt_us[i] for i in range(self.input_size * self.pre_step)])
 
-        def constraint_func():
+            return (np.dot(temp_dt_us, np.dot(H, temp_dt_us.reshape(-1, 1))) - np.dot(G.T, temp_dt_us.reshape(-1, 1)))[0]
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
+        def constraint_func(dt_us):
+            """ we consider the constraints in Ax <= b
+            however the scipy constraints is -(Ax - b) >= 0
+            so we should recalculate the A and B
             """
-            """
-            return None
+            temp_dt_us = np.array([dt_us[i] for i in range(self.input_size * self.pre_step)])
+            
+            constraint = []
+            for i in range(self.pre_step * self.input_size):
+                sums = -1. * (np.dot(A[i], temp_dt_us) - b[i])[0]
+                constraint.append(sums)
 
-        init_dt_us = np.zeros((self.input_size * self.pre_step, 1))
+            return np.array(sums)
 
-        opt_result = minimize(optimized_func, init_dt_us)
+        init_dt_us = np.zeros(self.input_size * self.pre_step)
 
+        # constraint
+        if self.W is not None or self.F is not None :
+            print("consider constraint!")
+            cons = ({'type' : 'ineq', 'fun' : constraint_func})
+            opt_result = minimize(optimized_func, init_dt_us, constraints=cons)
+        
         opt_dt_us = opt_result.x
-
+        print("opt_u = {0}".format(np.round(opt_dt_us, 5)))
         opt_u = opt_dt_us[:self.input_size] + self.history_us[-1]
 
         # save
         self.history_us.append(opt_u)
+        
 
         return opt_u
+
+
+
+
+"""
+constraint = []
+for i in range(self.pre_step * self.input_size):
+    sums = -1. * (np.dot(A[i], init_dt_us) - b[i])[0]
+    constraint.append(sums)
+"""

@@ -72,10 +72,10 @@ class FirstOrderSystem():
         k2 = dt * (np.dot(self.A, temp_x + k1/2.) + np.dot(self.B, temp_u))
         k3 = dt * (np.dot(self.A, temp_x + k2) + np.dot(self.B, temp_u))
 
-        # self.xs +=  ((k0 + 2 * k1 + 2 * k2 + k3) / 6.).flatten()
+        self.xs +=  ((k0 + 2 * k1 + 2 * k2 + k3) / 6.).flatten()
 
         # for oylar
-        self.xs += k0.flatten()
+        # self.xs += k0.flatten()
 
         # print("xs = {0}".format(self.xs))
         # a = input()
@@ -85,8 +85,8 @@ class FirstOrderSystem():
         # print(self.history_xs)
 
 def main():
-    dt = 0.01
-    simulation_time = 300 # in seconds
+    dt = 0.05
+    simulation_time = 50 # in seconds
     iteration_num = int(simulation_time / dt)
 
     # you must be care about this matrix
@@ -105,7 +105,7 @@ def main():
     D = np.zeros((4, 2))
 
     # make simulator with coninuous matrix
-    init_xs = np.array([0., 0., -3000., 50.])
+    init_xs = np.array([0., 0., 0., 0.])
     plant = FirstOrderSystem(A, B, C, init_states=init_xs)
 
     # create system
@@ -118,38 +118,63 @@ def main():
 
     # evaluation function weight
     Q = np.diag([1., 1., 1., 1.])
-    R = np.diag([100., 100.])
-    pre_step = 3
+    R = np.diag([0.1, 0.1])
+    pre_step = 5
 
     # make controller with discreted matrix
-    controller = MpcController(Ad, Bd, Q, R, pre_step)
+    controller = MpcController(Ad, Bd, Q, R, pre_step,
+                               dt_input_upper=np.array([0.5 * dt, 0.5 * dt]), dt_input_lower=np.array([-0.5 * dt, -0.5 * dt]),
+                               input_upper=np.array([2. ,5.]), input_lower=np.array([-2., -5.]))
+
     controller.initialize_controller()
 
     for i in range(iteration_num):
         print("simulation time = {0}".format(i))
-        reference = np.array([0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
-        controller.calc_input(plant.xs, reference)
-        
+        reference = np.array([[0., 0., -10., -5.] for _ in range(pre_step)]).flatten()   
         states = plant.xs
         opt_u = controller.calc_input(states, reference)
         plant.update_state(opt_u)
 
     history_states = np.array(plant.history_xs)
 
-    print(history_states[:, 2])
+    time_history_fig = plt.figure()
+    x_fig = time_history_fig.add_subplot(411)
+    y_fig = time_history_fig.add_subplot(412)
+    v_x_fig = time_history_fig.add_subplot(413)
+    v_y_fig = time_history_fig.add_subplot(414)
 
-    plt.plot(np.arange(0, simulation_time+0.01, dt), history_states[:, 0])
-    plt.plot(np.arange(0, simulation_time+0.01, dt), history_states[:, 1])
-    plt.plot(np.arange(0, simulation_time+0.01, dt), history_states[:, 2], linestyle="dashed")
-    plt.plot(np.arange(0, simulation_time+0.01, dt), history_states[:, 3])
+    v_x_fig.plot(np.arange(0, simulation_time+0.01, dt), history_states[:, 0])
+    v_x_fig.set_xlabel("time [s]")
+    v_x_fig.set_ylabel("v_x")
+
+    v_y_fig.plot(np.arange(0, simulation_time+0.01, dt), history_states[:, 1])
+    v_y_fig.set_xlabel("time [s]")
+    v_y_fig.set_ylabel("v_y")
+
+    x_fig.plot(np.arange(0, simulation_time+0.01, dt), history_states[:, 2])
+    x_fig.set_xlabel("time [s]")
+    x_fig.set_ylabel("x")
+
+    y_fig.plot(np.arange(0, simulation_time+0.01, dt), history_states[:, 3])
+    y_fig.set_xlabel("time [s]")
+    y_fig.set_ylabel("y")
+    time_history_fig.tight_layout()
+    plt.show()
+
+    history_us = np.array(controller.history_us)
+    input_history_fig = plt.figure()
+    u_1_fig = input_history_fig.add_subplot(211)
+    u_2_fig = input_history_fig.add_subplot(212)
+
+    u_1_fig.plot(np.arange(0, simulation_time+0.01, dt), history_us[:, 0])
+    u_1_fig.set_xlabel("time [s]")
+    u_1_fig.set_ylabel("u_x")
+    
+    u_2_fig.plot(np.arange(0, simulation_time+0.01, dt), history_us[:, 1])
+    u_2_fig.set_xlabel("time [s]")
+    u_2_fig.set_ylabel("u_y")
+    input_history_fig.tight_layout()
     plt.show()
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
