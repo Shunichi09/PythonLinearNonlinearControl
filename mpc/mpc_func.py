@@ -12,7 +12,7 @@ class MpcController():
 
     """
 
-    def __init__(self, A, B, Q, R, pre_step, input_upper=None, input_lower=None):
+    def __init__(self, A, B, Q, R, pre_step, initial_input=None, dt_input_upper=None, dt_input_lower=None, input_upper=None, input_lower=None):
         """
         """
         self.A = np.array(A)
@@ -27,8 +27,25 @@ class MpcController():
         self.state_size = self.A.shape[0]
         self.input_size = self.B.shape[1]
 
-        self.history_us = []
+        self.history_us = [np.zeros(self.input_size)]
 
+        # initial state
+        if initial_input is not None:
+            self.history_us = [initial_input]
+
+        # constraints
+        if dt_input_lower in not None:
+            self.dt_input_lower = dt_input_lower
+
+        if dt_input_upper in not None:
+            self.dt_input_upper = dt_input_upper
+        
+        if input_upper in not None:
+            self.input_upper = input_upper
+        
+        if input_lower in not None:
+            self.input_lower = input_lower
+        
     def initialize_controller(self):
         """
         make matrix to calculate optimal controller
@@ -66,6 +83,7 @@ class MpcController():
 
         print("theta_mat = \n{0}".format(self.theta_mat))
 
+        # evaluation function weight
         diag_Qs = np.array([np.diag(self.Q) for _ in range(self.pre_step)])
         diag_Rs = np.array([np.diag(self.R) for _ in range(self.pre_step)])
         
@@ -74,6 +92,16 @@ class MpcController():
 
         print("Qs = {0}".format(self.Qs))
         print("Rs = {0}".format(self.Rs))
+
+        # constraints
+        # dt U
+        F = np.array([[], [], []])
+
+        # u
+
+
+        # state
+
 
     def calc_input(self, states, references):
         """
@@ -89,10 +117,10 @@ class MpcController():
 
 
         """
-        temp_1 = np.dot(self.phi_mat, states)
-        temp_2 = np.dot(self.gamma_mat, self.history_us[-1])
+        temp_1 = np.dot(self.phi_mat, states.reshape(-1, 1))
+        temp_2 = np.dot(self.gamma_mat, self.history_us[-1].reshape(-1, 1))
 
-        error = references - temp_1 - temp_2
+        error = references.reshape(-1, 1) - temp_1 - temp_2
 
         G = 2. * np.dot(self.theta_mat.T, np.dot(self.Qs, error) )
 
@@ -101,35 +129,22 @@ class MpcController():
         def optimized_func(dt_us):
             """
             """
-            return np.dot(dt_us.T, np.dot(H, dt_us)) - np.dot(G.T, dt_us)
+            return np.dot(dt_us.flatten(), np.dot(H, dt_us)) - np.dot(G.T, dt_us)
 
         def constraint_func():
             """
             """
-            return 
+            return None
 
-        init_dt_us = np.zeros(self.pre_step)
+        init_dt_us = np.zeros((self.input_size * self.pre_step, 1))
 
         opt_result = minimize(optimized_func, init_dt_us)
 
-        opt_dt_us = opt_result
+        opt_dt_us = opt_result.x
 
-        opt_us = opt_dt_us[0] + self.history_us[-1]
+        opt_u = opt_dt_us[:self.input_size] + self.history_us[-1]
 
         # save
-        self.history_us.append(opt_us)
-        return opt_us
+        self.history_us.append(opt_u)
 
-
-    
-
-
-
-
-
-        
-
-        
-
-
-
+        return opt_u
