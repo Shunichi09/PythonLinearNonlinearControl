@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import math
 import copy
 
-from scipy.optimize import minimize
+from cvxopt import matrix, solvers
 
 class MpcController():
     """
@@ -220,45 +220,30 @@ class MpcController():
             b.append(b_F)
 
         A = np.array(A).reshape(-1, self.input_size * self.pre_step)
-        b = np.array(b).reshape(-1, 1)
+        # b = np.array(b).reshape(-1, 1)
+        ub = np.array(b).flatten()
+        # print(np.dot(self.F1, self.history_us[-1].reshape(-1, 1)))
 
-        def optimized_func(dt_us):
-            """
-            """
-            temp_dt_us = np.array([dt_us[i] for i in range(self.input_size * self.pre_step)])
-
-            return (np.dot(temp_dt_us, np.dot(H, temp_dt_us.reshape(-1, 1))) - np.dot(G.T, temp_dt_us.reshape(-1, 1)))[0]
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
-        def constraint_func(dt_us):
-            """ we consider the constraints in Ax <= b
-            however the scipy constraints is -(Ax - b) >= 0
-            so we should recalculate the A and B
-            """
-            temp_dt_us = np.array([dt_us[i] for i in range(self.input_size * self.pre_step)])
-            
-            constraint = []
-            for i in range(self.pre_step * self.input_size):
-                sums = -1. * (np.dot(A[i], temp_dt_us) - b[i])[0]
-                constraint.append(sums)
-
-            return np.array(sums)
-
-        init_dt_us = np.zeros(self.input_size * self.pre_step)
+        # make cvxpy problem formulation
+        P = 2*matrix(H)
+        q = matrix(-1 * G)
+        A = matrix(A)
+        b = matrix(ub)
 
         # constraint
         if self.W is not None or self.F is not None :
-            print("consider constraint!")
-            cons = ({'type' : 'ineq', 'fun' : constraint_func})
-            opt_result = minimize(optimized_func, init_dt_us, constraints=cons)
+            # print("consider constraint!")
+            opt_result = solvers.qp(P, q, G=A, h=b)
         
-        opt_dt_us = opt_result.x
-        print("opt_u = {0}".format(np.round(opt_dt_us, 5)))
+        # print(list(opt_result['x']))
+        opt_dt_us = list(opt_result['x'])
+        # print("current_u = {0}".format(self.history_us[-1]))
+        # print("opt_dt_u = {0}".format(np.round(opt_dt_us, 5)))
         opt_u = opt_dt_us[:self.input_size] + self.history_us[-1]
-
+        # print("opt_u = {0}".format(np.round(opt_u, 5)))
         # save
         self.history_us.append(opt_u)
-        
-
+        # a = input()
         return opt_u
 
 

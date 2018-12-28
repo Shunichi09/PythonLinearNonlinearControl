@@ -87,7 +87,7 @@ class FirstOrderSystem():
 
 def main():
     dt = 0.05
-    simulation_time = 100 # in seconds
+    simulation_time = 50 # in seconds
     iteration_num = int(simulation_time / dt)
 
     # you must be care about this matrix
@@ -107,7 +107,8 @@ def main():
 
     # make simulator with coninuous matrix
     init_xs = np.array([0., 0., 0., 0.])
-    plant = FirstOrderSystem(A, B, C, init_states=init_xs)
+    plant_cvxopt = FirstOrderSystem(A, B, C, init_states=init_xs)
+    plant_scipy = FirstOrderSystem(A, B, C, init_states=init_xs)
 
     # create system
     sysc = matlab.ss(A, B, C, D)
@@ -124,61 +125,85 @@ def main():
 
     # make controller with discreted matrix
     # please check the solver, if you want to use the scipy, set the MpcController_scipy
-    controller = MpcController_cvxopt(Ad, Bd, Q, R, pre_step,
+    controller_cvxopt = MpcController_cvxopt(Ad, Bd, Q, R, pre_step,
+                               dt_input_upper=np.array([0.25 * dt, 0.25 * dt]), dt_input_lower=np.array([-0.5 * dt, -0.5 * dt]),
+                               input_upper=np.array([1. ,3.]), input_lower=np.array([-1., -3.]))
+    
+    controller_scipy = MpcController_scipy(Ad, Bd, Q, R, pre_step,
                                dt_input_upper=np.array([0.25 * dt, 0.25 * dt]), dt_input_lower=np.array([-0.5 * dt, -0.5 * dt]),
                                input_upper=np.array([1. ,3.]), input_lower=np.array([-1., -3.]))
 
-    controller.initialize_controller()
+    controller_cvxopt.initialize_controller()
+    controller_scipy.initialize_controller()
 
     for i in range(iteration_num):
         print("simulation time = {0}".format(i))
         reference = np.array([[0., 0., -5., 7.5] for _ in range(pre_step)]).flatten()   
-        states = plant.xs
-        opt_u = controller.calc_input(states, reference)
-        plant.update_state(opt_u)
 
-    history_states = np.array(plant.history_xs)
+        states_cvxopt = plant_cvxopt.xs
+        states_scipy = plant_scipy.xs
 
-    time_history_fig = plt.figure()
+        opt_u_cvxopt = controller_cvxopt.calc_input(states_cvxopt, reference)
+        opt_u_scipy = controller_scipy.calc_input(states_scipy, reference)
+
+        plant_cvxopt.update_state(opt_u_cvxopt)
+        plant_scipy.update_state(opt_u_scipy)
+
+    history_states_cvxopt = np.array(plant_cvxopt.history_xs)
+    history_states_scipy = np.array(plant_scipy.history_xs)
+
+    time_history_fig = plt.figure(dpi=75)
     x_fig = time_history_fig.add_subplot(411)
     y_fig = time_history_fig.add_subplot(412)
     v_x_fig = time_history_fig.add_subplot(413)
     v_y_fig = time_history_fig.add_subplot(414)
 
-    v_x_fig.plot(np.arange(0, simulation_time+0.01, dt), history_states[:, 0])
+    v_x_fig.plot(np.arange(0, simulation_time+0.01, dt), history_states_cvxopt[:, 0], label="cvxopt")
+    v_x_fig.plot(np.arange(0, simulation_time+0.01, dt), history_states_scipy[:, 0], label="scipy", linestyle="dashdot")
     v_x_fig.plot(np.arange(0, simulation_time+0.01, dt), [0. for _ in range(iteration_num+1)], linestyle="dashed")
     v_x_fig.set_xlabel("time [s]")
     v_x_fig.set_ylabel("v_x")
+    v_x_fig.legend()
 
-    v_y_fig.plot(np.arange(0, simulation_time+0.01, dt), history_states[:, 1])
+    v_y_fig.plot(np.arange(0, simulation_time+0.01, dt), history_states_cvxopt[:, 1], label="cvxopt")
+    v_y_fig.plot(np.arange(0, simulation_time+0.01, dt), history_states_scipy[:, 1], label="scipy", linestyle="dashdot")
     v_y_fig.plot(np.arange(0, simulation_time+0.01, dt), [0. for _ in range(iteration_num+1)], linestyle="dashed")
     v_y_fig.set_xlabel("time [s]")
     v_y_fig.set_ylabel("v_y")
+    v_y_fig.legend()
 
-    x_fig.plot(np.arange(0, simulation_time+0.01, dt), history_states[:, 2])
+    x_fig.plot(np.arange(0, simulation_time+0.01, dt), history_states_cvxopt[:, 2], label="cvxopt")
+    x_fig.plot(np.arange(0, simulation_time+0.01, dt), history_states_scipy[:, 2], label="scipy", linestyle="dashdot")
     x_fig.plot(np.arange(0, simulation_time+0.01, dt), [-5. for _ in range(iteration_num+1)], linestyle="dashed")
     x_fig.set_xlabel("time [s]")
     x_fig.set_ylabel("x")
 
-    y_fig.plot(np.arange(0, simulation_time+0.01, dt), history_states[:, 3])
+    y_fig.plot(np.arange(0, simulation_time+0.01, dt),  history_states_cvxopt[:, 3], label ="cvxopt")
+    y_fig.plot(np.arange(0, simulation_time+0.01, dt),  history_states_scipy[:, 3], label="scipy", linestyle="dashdot")
     y_fig.plot(np.arange(0, simulation_time+0.01, dt), [7.5 for _ in range(iteration_num+1)], linestyle="dashed")
     y_fig.set_xlabel("time [s]")
     y_fig.set_ylabel("y")
     time_history_fig.tight_layout()
     plt.show()
 
-    history_us = np.array(controller.history_us)
-    input_history_fig = plt.figure()
+    history_us_cvxopt = np.array(controller_cvxopt.history_us)
+    history_us_scipy = np.array(controller_scipy.history_us)
+
+    input_history_fig = plt.figure(dpi=75)
     u_1_fig = input_history_fig.add_subplot(211)
     u_2_fig = input_history_fig.add_subplot(212)
 
-    u_1_fig.plot(np.arange(0, simulation_time+0.01, dt), history_us[:, 0])
+    u_1_fig.plot(np.arange(0, simulation_time+0.01, dt), history_us_cvxopt[:, 0], label="cvxopt")
+    u_1_fig.plot(np.arange(0, simulation_time+0.01, dt), history_us_scipy[:, 0], label="scipy", linestyle="dashdot")
     u_1_fig.set_xlabel("time [s]")
     u_1_fig.set_ylabel("u_x")
+    u_1_fig.legend()
     
-    u_2_fig.plot(np.arange(0, simulation_time+0.01, dt), history_us[:, 1])
+    u_2_fig.plot(np.arange(0, simulation_time+0.01, dt), history_us_cvxopt[:, 1], label="cvxopt")
+    u_2_fig.plot(np.arange(0, simulation_time+0.01, dt), history_us_scipy[:, 1], label="scipy", linestyle="dashdot")
     u_2_fig.set_xlabel("time [s]")
     u_2_fig.set_ylabel("u_y")
+    u_2_fig.legend()
     input_history_fig.tight_layout()
     plt.show()
 
