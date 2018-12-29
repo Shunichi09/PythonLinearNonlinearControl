@@ -102,11 +102,12 @@ the both examples have same evaluation function form as following equation.
 
 - ACC (Adaptive cruise control)
 
-<img src = https://github.com/Shunichi09/linear_nonlinear_control/blob/demo_gifs/ACC.gif width = 70%>
+<img src = https://github.com/Shunichi09/linear_nonlinear_control/blob/demo_gif/mpc/basic/ACC.gif width = 70%>
 
 
 - animation
 
+<img src = https://github.com/Shunichi09/linear_nonlinear_control/blob/demo_gif/mpc/basic/ACC.gif width = 70%>
 
 
 # Usage
