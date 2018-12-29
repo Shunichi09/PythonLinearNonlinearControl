@@ -15,41 +15,52 @@ class MpcController():
     B : numpy.ndarray
         input matrix
     Q : numpy.ndarray
-        evaluation function weight
+        evaluation function weight for states
+    Qs : numpy.ndarray
+        concatenated evaluation function weight for states
     R : numpy.ndarray
-        evaluation function weight
+        evaluation function weight for inputs
+    Rs : numpy.ndarray
+        concatenated evaluation function weight for inputs
     pre_step : int
         prediction step
-    dt_input_upper : numpy.ndarray
-        constraints of input dt
-    dt_input_lower : numpy.ndarray
-        constraints of input dt
-    input_upper : numpy.ndarray
-        constraints of input
-    input_lower : numpy.ndarray
-        constraints of input
-    history_
+    state_size : int
+        state size of the plant
+    input_size : int
+        input size of the plant
+    dt_input_upper : numpy.ndarray, shape(input_size, ), optional
+        constraints of input dt, default is None
+    dt_input_lower : numpy.ndarray, shape(input_size, ), optional
+        constraints of input dt, default is None
+    input_upper : numpy.ndarray, shape(input_size, ), optional
+        constraints of input, default is None
+    input_lower : numpy.ndarray, shape(input_size, ), optional
+        constraints of input, default is None
     """
     def __init__(self, A, B, Q, R, pre_step, initial_input=None, dt_input_upper=None, dt_input_lower=None, input_upper=None, input_lower=None):
         """
+        Parameters
+        ------------
         A : numpy.ndarray
             system matrix
         B : numpy.ndarray
             input matrix
         Q : numpy.ndarray
-            evaluation function weight
+            evaluation function weight for states
         R : numpy.ndarray
-            evaluation function weight
+            evaluation function weight for inputs
         pre_step : int
             prediction step
-        dt_input_upper : numpy.ndarray
-            constraints of input dt
-        dt_input_lower : numpy.ndarray
-            constraints of input dt
-        input_upper : numpy.ndarray
-            constraints of input
-        input_lower : numpy.ndarray
-            constraints of input
+        dt_input_upper : numpy.ndarray, shape(input_size, ), optional
+            constraints of input dt, default is None
+        dt_input_lower : numpy.ndarray, shape(input_size, ), optional
+            constraints of input dt, default is None
+        input_upper : numpy.ndarray, shape(input_size, ), optional
+            constraints of input, default is None
+        input_lower : numpy.ndarray, shape(input_size, ), optional
+            constraints of input, default is None
+        history_us : list
+            time history of optimal input us(numpy.ndarray)
         """
         self.A = np.array(A)
         self.B = np.array(B)
@@ -188,15 +199,15 @@ class MpcController():
         """calculate optimal input
         Parameters
         -----------
-        states : numpy.array
-            the size should have (state length * 1)
-        references :
-            the size should have (state length * pre_step)
+        states : numpy.ndarray, shape(state length, )
+            current state of system
+        references : numpy.ndarray, shape(state length * pre_step, )
+            reference of the system, you should set this value as reachable goal
 
         References
         ------------
-        opt_input : numpy.ndarray
-            optimal input, size is (1, input_length)
+        opt_input : numpy.ndarray, shape(input_length, )
+            optimal input
         """
         temp_1 = np.dot(self.phi_mat, states.reshape(-1, 1))
         temp_2 = np.dot(self.gamma_mat, self.history_us[-1].reshape(-1, 1))
@@ -221,9 +232,8 @@ class MpcController():
             b.append(b_F)
 
         A = np.array(A).reshape(-1, self.input_size * self.pre_step)
-        # b = np.array(b).reshape(-1, 1)
+
         ub = np.array(b).flatten()
-        # print(np.dot(self.F1, self.history_us[-1].reshape(-1, 1)))
 
         def optimized_func(dt_us):
             """
@@ -240,25 +250,13 @@ class MpcController():
 
         # constraint
         if self.W is not None or self.F is not None :
-            # print("consider constraint!")
             opt_result = minimize(optimized_func, init_dt_us, constraints=[linear_cons])
         
         opt_dt_us = opt_result.x
-        # print("current_u = {0}".format(self.history_us[-1]))
-        # print("opt_dt_u = {0}".format(np.round(opt_dt_us, 5)))
+
         opt_u = opt_dt_us[:self.input_size] + self.history_us[-1]
-        # print("opt_u = {0}".format(np.round(opt_u, 5)))
+
         # save
         self.history_us.append(opt_u)
         
         return opt_u
-
-
-
-
-"""
-constraint = []
-for i in range(self.pre_step * self.input_size):
-    sums = -1. * (np.dot(A[i], init_dt_us) - b[i])[0]
-    constraint.append(sums)
-"""

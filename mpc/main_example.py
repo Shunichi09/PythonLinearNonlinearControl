@@ -12,7 +12,7 @@ class FirstOrderSystem():
 
     Attributes
     -----------
-    states : float
+    xs : numpy.ndarray
         system states
     A : numpy.ndarray
         system matrix
@@ -20,7 +20,7 @@ class FirstOrderSystem():
         control matrix
     C : numpy.ndarray
         observation matrix
-    history_state : list
+    history_xs : list
         time history of state
     """
     def __init__(self, A, B, C, D=None, init_states=None):
@@ -33,7 +33,7 @@ class FirstOrderSystem():
             control matrix
         C : numpy.ndarray
             observation matrix
-        C : numpy.ndarray
+        D : numpy.ndarray
             directly matrix
         init_state : float, optional
             initial state of system default is None
@@ -59,8 +59,8 @@ class FirstOrderSystem():
         """calculating input
         Parameters
         ------------
-        u : float
-            input of system in some cases this means the reference
+        u : numpy.ndarray
+            inputs of system in some cases this means the reference
         dt : float in seconds, optional
             sampling time of simulation, default is 0.01 [s]
         """
@@ -77,13 +77,11 @@ class FirstOrderSystem():
 
         # for oylar
         # self.xs += k0.flatten()
-
         # print("xs = {0}".format(self.xs))
-        # a = input()
+
         # save
         save_states = copy.deepcopy(self.xs)
         self.history_xs.append(save_states)
-        # print(self.history_xs)
 
 def main():
     dt = 0.05
@@ -135,7 +133,7 @@ def main():
         reference = np.array([[0., 0., -5., 7.5] for _ in range(pre_step)]).flatten()   
         states = plant.xs
         opt_u = controller.calc_input(states, reference)
-        plant.update_state(opt_u)
+        plant.update_state(opt_u, dt=dt)
 
     history_states = np.array(plant.history_xs)
 
