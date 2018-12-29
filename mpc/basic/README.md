@@ -94,16 +94,17 @@ the both examples have same evaluation function form as following equation.
 
 - time history
 
-
+<img src = https://github.com/Shunichi09/linear_nonlinear_control/blob/demo_gif/mpc/basic/first_order_states.png width = 70%>
 
 - input
 
-
+<img src = https://github.com/Shunichi09/linear_nonlinear_control/blob/demo_gif/mpc/basic/first_order_input.png width = 70%>
 
 - ACC (Adaptive cruise control)
 
-<img src = https://github.com/Shunichi09/linear_nonlinear_control/blob/demo_gif/mpc/basic/ACC.gif width = 70%>
+- time history of states
 
+<img src = https://github.com/Shunichi09/linear_nonlinear_control/blob/demo_gif/mpc/basic/ACC_states.png width = 70%>
 
 - animation
 
