@@ -218,7 +218,6 @@ def main():
     theta_fig.legend()
 
     time_history_fig.tight_layout()
-    time_history_fig.legend()
 
     traj_fig.plot(lead_history_states[:, 0], lead_history_states[:, 1], label="lead")
     traj_fig.plot(follow_history_states[:, 0], follow_history_states[:, 1], label="follow")

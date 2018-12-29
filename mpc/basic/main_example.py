@@ -85,7 +85,7 @@ class FirstOrderSystem():
 
 def main():
     dt = 0.05
-    simulation_time = 100 # in seconds
+    simulation_time = 30 # in seconds
     iteration_num = int(simulation_time / dt)
 
     # you must be care about this matrix
@@ -116,9 +116,9 @@ def main():
     Bd = sysd.B
 
     # evaluation function weight
-    Q = np.diag([1., 1., 10., 10.])
-    R = np.diag([0.01, 0.01])
-    pre_step = 5
+    Q = np.diag([1., 1., 1., 1.])
+    R = np.diag([1., 1.])
+    pre_step = 10
 
     # make controller with discreted matrix
     # please check the solver, if you want to use the scipy, set the MpcController_scipy

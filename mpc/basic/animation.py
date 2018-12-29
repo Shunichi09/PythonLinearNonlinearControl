@@ -127,7 +127,7 @@ class AnimDrawer():
         self._set_axis()
         self._set_img()
 
-        self.skip_num = 3
+        self.skip_num = 1
         frame_num = int((len(self.history_xs[0])-1) / self.skip_num)
 
         animation = ani.FuncAnimation(self.anim_fig, self._update_anim, interval=interval, frames=frame_num)
