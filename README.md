@@ -12,10 +12,9 @@ Now you can see the examples of control theories as following
 # Usage and Details
 you can see the usage in each folder
 
-# Requirement
-You should install following software
+# Basic Requirement
 
-- python(3.5>)
+- python3.5 or more
 - numpy
 - matplotlib
 
