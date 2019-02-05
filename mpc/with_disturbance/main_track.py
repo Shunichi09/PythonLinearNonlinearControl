@@ -9,10 +9,12 @@ from control import matlab
 
 class WheeledSystem():
     """SampleSystem, this is the simulator
+        Kinematic model of car
+
     Attributes
     -----------
     xs : numpy.ndarray
-        system states, [x, y, theta]
+        system states, [x, y, phi, beta]
     history_xs : list
         time history of state
     """
@@ -23,7 +25,11 @@ class WheeledSystem():
         init_state : float, optional, shape(3, )
             initial state of system default is None
         """
-        self.xs = np.zeros(3)
+        self.NUM_STATE = 4
+        self.xs = np.zeros(self.NUM_STATE)
+
+        self.FRONT_WHEELE_BASE = 1.0
+        self.REAR_WHEELE_BASE = 1.0
 
         if init_states is not None:
             self.xs = copy.deepcopy(init_states)
@@ -40,36 +46,37 @@ class WheeledSystem():
             sampling time of simulation, default is 0.01 [s]
         """
         # for theta 1, theta 1 dot, theta 2, theta 2 dot
-        k0 = [0.0 for _ in range(3)]
-        k1 = [0.0 for _ in range(3)]
-        k2 = [0.0 for _ in range(3)]
-        k3 = [0.0 for _ in range(3)]
+        k0 = [0.0 for _ in range(self.NUM_STATE)]
+        k1 = [0.0 for _ in range(self.NUM_STATE)]
+        k2 = [0.0 for _ in range(self.NUM_STATE)]
+        k3 = [0.0 for _ in range(self.NUM_STATE)]
 
-        functions = [self._func_x_1, self._func_x_2, self._func_x_3]
+        functions = [self._func_x_1, self._func_x_2, self._func_x_3, self._func_x_4]
 
         # solve Runge-Kutta
         for i, func in enumerate(functions):
-            k0[i] = dt * func(self.xs[0], self.xs[1], self.xs[2], us[0], us[1])
+            k0[i] = dt * func(self.xs[0], self.xs[1], self.xs[2], self.xs[3], us[0], us[1])
 
         for i, func in enumerate(functions):
-            k1[i] = dt * func(self.xs[0] + k0[0]/2., self.xs[1] + k0[1]/2., self.xs[2] + k0[2]/2., us[0], us[1])
+            k1[i] = dt * func(self.xs[0] + k0[0]/2., self.xs[1] + k0[1]/2., self.xs[2] + k0[2]/2.,  self.xs[3] + k0[3]/2, us[0], us[1])
         
         for i, func in enumerate(functions):
-            k2[i] = dt * func(self.xs[0] + k0[0]/2., self.xs[1] + k0[1]/2., self.xs[2] + k0[2]/2., us[0], us[1])
+            k2[i] = dt * func(self.xs[0] + k1[0]/2., self.xs[1] + k1[1]/2., self.xs[2] + k1[2]/2., self.xs[3] + k1[3]/2., us[0], us[1])
         
         for i, func in enumerate(functions):
-            k3[i] =  dt * func(self.xs[0] + k2[0], self.xs[1] + k2[1], self.xs[2] + k2[2], us[0], us[1])
+            k3[i] =  dt * func(self.xs[0] + k2[0], self.xs[1] + k2[1], self.xs[2] + k2[2], self.xs[3] + k2[3], us[0], us[1])
         
         self.xs[0] += (k0[0] + 2. * k1[0] + 2. * k2[0] + k3[0]) / 6.
         self.xs[1] += (k0[1] + 2. * k1[1] + 2. * k2[1] + k3[1]) / 6.
         self.xs[2] += (k0[2] + 2. * k1[2] + 2. * k2[2] + k3[2]) / 6.
+        self.xs[3] += (k0[3] + 2. * k1[3] + 2. * k2[3] + k3[3]) / 6.
     
         # save
         save_states = copy.deepcopy(self.xs)
         self.history_xs.append(save_states)
         print(self.xs)
 
-    def _func_x_1(self, y_1, y_2, y_3, u_1, u_2):
+    def _func_x_1(self, y_1, y_2, y_3, y_4, u_1, u_2):
         """
         Parameters
         ------------
@@ -81,10 +88,10 @@ class WheeledSystem():
         u_2 : float
             system input
         """
-        y_dot = math.cos(y_3) * u_1
+        y_dot = u_1 * math.cos(y_3 + y_4)
         return y_dot
     
-    def _func_x_2(self, y_1, y_2, y_3, u_1, u_2):
+    def _func_x_2(self, y_1, y_2, y_3, y_4, u_1, u_2):
         """
         Parameters
         ------------
@@ -96,10 +103,10 @@ class WheeledSystem():
         u_2 : float
             system input
         """
-        y_dot = math.sin(y_3) * u_1
+        y_dot = u_1 * math.sin(y_3 + y_4)
         return y_dot
     
-    def _func_x_3(self, y_1, y_2, y_3, u_1, u_2):
+    def _func_x_3(self, y_1, y_2, y_3, y_4, u_1, u_2):
         """
         Parameters
         ------------
@@ -111,11 +118,18 @@ class WheeledSystem():
         u_2 : float
             system input
         """
-        y_dot = u_2
+        y_dot = u_1 / self.REAR_WHEELE_BASE * math.sin(y_4)
+        return y_dot
+
+    def _func_x_4(self, y_1, y_2, y_3, y_4, u_1, u_2):
+        """
+        """
+        y_dot = math.atan2(self.REAR_WHEELE_BASE / (self.REAR_WHEELE_BASE + self.FRONT_WHEELE_BASE) * math.tan(u_2))
+
         return y_dot
 
 def main():
-    dt = 0.05
+    dt = 0.016
     simulation_time = 10 # in seconds
     iteration_num = int(simulation_time / dt)
 
@@ -123,38 +137,33 @@ def main():
     # these A and B are for continuos system if you want to use discret system matrix please skip this step
     # lineared car system
     V = 5.0
-    A = np.array([[0., V], [0., 0.]])
-    B = np.array([[0.], [1.]])
+    Ad = np.array([[1., 0., 0., 0.],
+                   [0., 1,  V, 0.],
+                   [0., 0., 1., 0.],
+                   [0., 0., 1., 0.]]) * dt
 
-    C = np.eye(2)
-    D = np.zeros((2, 1))
+    Bd = np.array([[0.], [0.], [0.], [0.3]]) * dt
+
+    W_D = np.array([[V], [0.], [0.], [0.]]) * dt
 
     # make simulator with coninuous matrix
-    init_xs_lead = np.array([5., 0., 0.])
-    init_xs_follow = np.array([0., 0., 0.])
-    lead_car = TwoWheeledSystem(init_states=init_xs_lead)
-    follow_car = TwoWheeledSystem(init_states=init_xs_follow)
-
-    # create system
-    sysc = matlab.ss(A, B, C, D)
-    # discrete system
-    sysd = matlab.c2d(sysc, dt)
-
-    Ad = sysd.A
-    Bd = sysd.B
+    init_xs_lead = np.array([5., 0., 0. ,0.])
+    init_xs_follow = np.array([0., 0., 0., 0.])
+    lead_car = WheeledSystem(init_states=init_xs_lead)
+    follow_car = WheeledSystem(init_states=init_xs_follow)
 
     # evaluation function weight
-    Q = np.diag([1., 1.])
+    Q = np.diag([1., 1., 1., 1.])
     R = np.diag([5.])
-    pre_step = 15
+    pre_step = 2
 
     # make controller with discreted matrix
     # please check the solver, if you want to use the scipy, set the MpcController_scipy
-    lead_controller = MpcController_cvxopt(Ad, Bd, Q, R, pre_step,
+    lead_controller = MpcController_cvxopt(Ad, Bd, W_D, Q, R, pre_step,
                                dt_input_upper=np.array([30 * dt]), dt_input_lower=np.array([-30 * dt]),
                                input_upper=np.array([30.]), input_lower=np.array([-30.]))
 
-    follow_controller = MpcController_cvxopt(Ad, Bd, Q, R, pre_step,
+    follow_controller = MpcController_cvxopt(Ad, Bd, W_D, Q, R, pre_step,
                                dt_input_upper=np.array([30 * dt]), dt_input_lower=np.array([-30 * dt]),
                                input_upper=np.array([30.]), input_lower=np.array([-30.]))
 
