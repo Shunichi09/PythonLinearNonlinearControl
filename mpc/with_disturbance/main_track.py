@@ -140,11 +140,10 @@ def main():
     WHEEL_BASE = 2.2
     tau = 0.01
 
-    V = 7.0 # initialize
+    V = 5.0 # initialize
 
-    alpha = 0.001
-    R = 1.0 / 2 * math.sin(alpha)
-    delta_r = math.atan2(WHEEL_BASE, R)
+    
+    delta_r = 0.
 
     A12 = (V / WHEEL_BASE) / (math.cos(delta_r)**2)
     A22 = (1. - 1. / tau)
@@ -207,6 +206,9 @@ def main():
 
         alpha = math.atan2(relative_ref[1], relative_ref[0])
         R = np.linalg.norm(relative_ref) / 2 * math.sin(alpha)
+
+        print(R)
+        input()
 
         V = 7.0 
         delta_r = math.atan2(WHEEL_BASE, R)
