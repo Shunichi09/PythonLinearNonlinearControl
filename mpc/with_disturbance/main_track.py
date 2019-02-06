@@ -6,6 +6,7 @@ import copy
 from mpc_func_with_cvxopt import MpcController as MpcController_cvxopt
 from animation import AnimDrawer
 from control import matlab
+from coordinate_trans import coordinate_transformation_in_angle, coordinate_transformation_in_position
 
 class WheeledSystem():
     """SampleSystem, this is the simulator
@@ -124,7 +125,7 @@ class WheeledSystem():
     def _func_x_4(self, y_1, y_2, y_3, y_4, u_1, u_2):
         """
         """
-        y_dot = math.atan2(self.REAR_WHEELE_BASE / (self.REAR_WHEELE_BASE + self.FRONT_WHEELE_BASE) * math.tan(u_2))
+        y_dot = math.atan2(self.REAR_WHEELE_BASE * math.tan(u_2) ,self.REAR_WHEELE_BASE + self.FRONT_WHEELE_BASE)
 
         return y_dot
 
@@ -137,14 +138,15 @@ def main():
     # these A and B are for continuos system if you want to use discret system matrix please skip this step
     # lineared car system
     WHEEL_BASE = 2.2
+    tau = 0.01
 
-    V = 0.1 # initialize
+    V = 7.0 # initialize
 
-    alpha = 0.1
+    alpha = 0.001
     R = 1.0 / 2 * math.sin(alpha)
-    delta_r = math.atan2(WHEEL_BASE / R)
+    delta_r = math.atan2(WHEEL_BASE, R)
 
-    A12 = (V / WHEEL_BASE) / math.cos(delta_r)
+    A12 = (V / WHEEL_BASE) / (math.cos(delta_r)**2)
     A22 = (1. - 1. / tau)
 
     Ad = np.array([[1., V,   0.], 
@@ -164,9 +166,9 @@ def main():
     follow_car = WheeledSystem(init_states=init_xs_follow)
 
     # evaluation function weight
-    Q = np.diag([1., 1., 1., 1.])
+    Q = np.diag([1., 1., 1.])
     R = np.diag([5.])
-    pre_step = 2
+    pre_step = 15
 
     # make controller with discreted matrix
     # please check the solver, if you want to use the scipy, set the MpcController_scipy
@@ -182,18 +184,54 @@ def main():
     follow_controller.initialize_controller()
 
     # reference
-    lead_reference = np.array([[0., 0.] for _ in range(pre_step)]).flatten()
+    lead_reference = np.array([[0., 0., 0.] for _ in range(pre_step)]).flatten()
+    ref = np.array([[0.], [0.]])
 
     for i in range(iteration_num):
         print("simulation time = {0}".format(i))
+
         # make lead car's move
         if i > int(iteration_num / 3):
-            lead_reference = np.array([[4., 0.] for _ in range(pre_step)]).flatten()
-        
+            ref = np.array([[0.], [4.]])
+
+        ## lead
+        # world traj
         lead_states = lead_car.xs
-        lead_opt_u = lead_controller.calc_input(lead_states[1:], lead_reference)
+
+        # transformation
+        relative_ref = coordinate_transformation_in_position(ref, lead_states[:2])
+        relative_ref = coordinate_transformation_in_angle(relative_ref, lead_states[2])
+
+        # make ref
+        lead_reference = np.array([[ref[1, 0], 0., 0.] for _ in range(pre_step)]).flatten()
+
+        alpha = math.atan2(relative_ref[1], relative_ref[0])
+        R = np.linalg.norm(relative_ref) / 2 * math.sin(alpha)
+
+        V = 7.0 
+        delta_r = math.atan2(WHEEL_BASE, R)
+
+        A12 = (V / WHEEL_BASE) / (math.cos(delta_r)**2)
+        A22 = (1. - 1. / tau)
+
+        Ad = np.array([[1., V,   0.], 
+                    [0., 1., A12],
+                    [0., 0., A22]]) * dt
+
+        Bd = np.array([[0.], [0.], [1. / tau]]) * dt
+
+        W_D_0 = - (V / WHEEL_BASE) * delta_r / (math.cos(delta_r)**2)
+
+        W_D = np.array([[0.], [W_D_0], [0.]]) * dt
+
+        # update system matrix
+        lead_controller.update_system_model(Ad, Bd, W_D)
+
+        lead_opt_u = lead_controller.calc_input(np.zeros(3), lead_reference)
         lead_opt_u = np.hstack((np.array([V]), lead_opt_u))
 
+        
+        ## follow
         # make follow car
         follow_reference = np.array([lead_states[1:] for _ in range(pre_step)]).flatten()
         follow_states = follow_car.xs
