@@ -136,15 +136,26 @@ def main():
     # you must be care about this matrix
     # these A and B are for continuos system if you want to use discret system matrix please skip this step
     # lineared car system
-    V = 5.0
-    Ad = np.array([[1., 0., 0., 0.],
-                   [0., 1,  V, 0.],
-                   [0., 0., 1., 0.],
-                   [0., 0., 1., 0.]]) * dt
+    WHEEL_BASE = 2.2
 
-    Bd = np.array([[0.], [0.], [0.], [0.3]]) * dt
+    V = 0.1 # initialize
 
-    W_D = np.array([[V], [0.], [0.], [0.]]) * dt
+    alpha = 0.1
+    R = 1.0 / 2 * math.sin(alpha)
+    delta_r = math.atan2(WHEEL_BASE / R)
+
+    A12 = (V / WHEEL_BASE) / math.cos(delta_r)
+    A22 = (1. - 1. / tau)
+
+    Ad = np.array([[1., V,   0.], 
+                   [0., 1., A12],
+                   [0., 0., A22]]) * dt
+
+    Bd = np.array([[0.], [0.], [1. / tau]]) * dt
+
+    W_D_0 = - (V / WHEEL_BASE) * delta_r / (math.cos(delta_r)**2)
+
+    W_D = np.array([[0.], [W_D_0], [0.]]) * dt
 
     # make simulator with coninuous matrix
     init_xs_lead = np.array([5., 0., 0. ,0.])
