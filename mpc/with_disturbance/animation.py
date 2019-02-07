@@ -153,8 +153,8 @@ class AnimDrawer():
         self.axis.set_aspect('equal', adjustable='box')
 
         # (2) set the xlim and ylim        
-        self.axis.set_xlim(-5, 50)
-        self.axis.set_ylim(-2, 5)         
+        self.axis.set_xlim(-2, 50)
+        self.axis.set_ylim(-10, 10)         
 
     def _set_img(self):
         """ initialize the imgs of animation

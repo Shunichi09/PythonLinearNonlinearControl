@@ -49,7 +49,7 @@ def coordinate_transformation_in_position(positions, base_positions):
     
     Returns
     -------
-    traslated_positions : numpy.ndarray
+    traslated_positions : numpy.ndarray, shape(2, N)
     
     '''
 

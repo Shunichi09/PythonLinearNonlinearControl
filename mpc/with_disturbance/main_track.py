@@ -3,10 +3,12 @@ import matplotlib.pyplot as plt
 import math
 import copy
 
-from mpc_func_with_cvxopt import MpcController as MpcController_cvxopt
+# from mpc_func_with_cvxopt import MpcController as MpcController_cvxopt
+from iterative_MPC import IterativeMpcController
 from animation import AnimDrawer
-from control import matlab
+# from control import matlab
 from coordinate_trans import coordinate_transformation_in_angle, coordinate_transformation_in_position
+from traj_func import make_sample_traj
 
 class WheeledSystem():
     """SampleSystem, this is the simulator
@@ -28,6 +30,8 @@ class WheeledSystem():
         """
         self.NUM_STATE = 4
         self.xs = np.zeros(self.NUM_STATE)
+
+        self.tau = 0.01
 
         self.FRONT_WHEELE_BASE = 1.0
         self.REAR_WHEELE_BASE = 1.0
@@ -89,7 +93,9 @@ class WheeledSystem():
         u_2 : float
             system input
         """
-        y_dot = u_1 * math.cos(y_3 + y_4)
+        # y_dot = u_1 * math.cos(y_3 + y_4)
+        y_dot = u_1 * math.cos(y_3)
+
         return y_dot
     
     def _func_x_2(self, y_1, y_2, y_3, y_4, u_1, u_2):
@@ -104,7 +110,9 @@ class WheeledSystem():
         u_2 : float
             system input
         """
-        y_dot = u_1 * math.sin(y_3 + y_4)
+        # y_dot = u_1 * math.sin(y_3 + y_4)
+        y_dot = u_1 * math.sin(y_3)
+
         return y_dot
     
     def _func_x_3(self, y_1, y_2, y_3, y_4, u_1, u_2):
@@ -119,135 +127,245 @@ class WheeledSystem():
         u_2 : float
             system input
         """
-        y_dot = u_1 / self.REAR_WHEELE_BASE * math.sin(y_4)
+        # y_dot = u_1 / self.REAR_WHEELE_BASE * math.sin(y_4)
+        y_dot = u_1 * math.tan(y_4) / (self.REAR_WHEELE_BASE + self.FRONT_WHEELE_BASE)
+
         return y_dot
 
     def _func_x_4(self, y_1, y_2, y_3, y_4, u_1, u_2):
+        """Ad, Bd, W_D, Q, R
+        ParAd, Bd, W_D, Q, R
+        ---Ad, Bd, W_D, Q, R
+        y_1 : float
+        y_2 : float
+        y_3 : float
+        u_1 : float
+            system input
+        u_2 : float
+            system input
         """
-        """
-        y_dot = math.atan2(self.REAR_WHEELE_BASE * math.tan(u_2) ,self.REAR_WHEELE_BASE + self.FRONT_WHEELE_BASE)
+        # y_dot = math.atan2(self.REAR_WHEELE_BASE * math.tan(u_2) ,self.REAR_WHEELE_BASE + self.FRONT_WHEELE_BASE)
+        y_dot = - 1. / self.tau * (y_4 - u_2)
 
         return y_dot
 
+class SystemModel():
+    """
+    Attributes
+    -----------
+    WHEEL_BASE : float
+        wheel base of the car
+    Ad_s : list
+        list of system model matrix Ad
+    Bd_s : list
+        list of system model matrix Bd
+    W_D_s : list
+        list of system model matrix W_D_s
+    Q : numpy.ndarray
+    R : numpy.ndarray
+    """
+    def __init__(self, tau = 0.15, dt = 0.016):
+        """
+        Parameters
+        -----------
+        tau : time constant, optional
+        dt : sampling time, optional
+        """
+        self.dt = dt
+        self.tau = tau
+        self.WHEEL_BASE = 2.2
+
+        self.Ad_s = []
+        self.Bd_s = []
+        self.W_D_s = []
+
+    def calc_predict_sytem_model(self, V, curvatures, predict_step):
+        """
+        calc next predict systemo models
+        V : float
+        curvatures : list
+            this is the next curvature's list
+        predict_step : int
+            predict step of MPC
+        """
+        for i in range(predict_step):
+            delta_r = math.atan2(self.WHEEL_BASE, 1. / curvatures[i])
+
+            A12 = (V / self.WHEEL_BASE) / math.cos(delta_r)
+            A22 = (1. - 1. / self.tau * self.dt)
+
+            Ad = np.array([[1., V * self.dt,   0.], 
+                           [0., 1., A12 * self.dt],
+                           [0., 0., A22]])
+
+            Bd = np.array([[0.], [0.], [1. / self.tau]]) * self.dt
+
+            W_D_0 = (V / self.WHEEL_BASE) * delta_r / (math.cos(delta_r)**2) - V * curvatures[i]
+
+            W_D = np.array([[0.], [W_D_0], [0.]]) * self.dt
+
+            self.Ad_s.append(Ad)
+            self.Bd_s.append(Bd)
+            self.W_D_s.append(W_D)
+
+        # return self.Ad_s, self.Bd_s, self.W_D_s
+
+def search_nearest_point(points, base_point):
+    """
+    Parameters
+    -----------
+    points : numpy.ndarray, shape is (2, N)
+    base_point : numpy.ndarray, shape is (2, 1)
+
+    Returns
+    -------
+    nearest_index : 
+    nearest_point : 
+    """
+    distance_mat = np.sqrt(np.sum((points - base_point)**2, axis=0))
+
+    index_min = np.argmin(distance_mat)
+
+    return index_min, points[:, index_min]
+
+def calc_curvatures(traj_ref, predict_step, num_skip):
+    """
+    Parameters
+    -----------
+    points : numpy.ndarray, shape is (2, predict_step + num_skip)
+    predict_step : int
+    num_skip : int
+
+    Returns
+    -------
+    angles : list
+        list of angle
+    curvatures : list
+        list of curvature
+    """
+    angles = []
+    curvatures = []
+
+    for i in range(predict_step):
+        
+        temp = traj_ref[:, i + num_skip] - traj_ref[:, i]
+        alpha = math.atan2(temp[1], temp[0])
+
+        angles.append(alpha)
+
+        distance = np.linalg.norm(temp) 
+        R = distance / (2. * math.sin(alpha)) 
+        curvatures.append(1. / R)
+
+    # print("curvatures = {}".format(curvatures))
+    
+    return angles, curvatures
+
 def main():
-    dt = 0.016
+    # parameters
+    dt = 0.01
     simulation_time = 10 # in seconds
+    PREDICT_STEP = 15
     iteration_num = int(simulation_time / dt)
 
-    # you must be care about this matrix
-    # these A and B are for continuos system if you want to use discret system matrix please skip this step
-    # lineared car system
-    WHEEL_BASE = 2.2
-    tau = 0.01
-
-    V = 5.0 # initialize
-
-    
-    delta_r = 0.
-
-    A12 = (V / WHEEL_BASE) / (math.cos(delta_r)**2)
-    A22 = (1. - 1. / tau)
-
-    Ad = np.array([[1., V,   0.], 
-                   [0., 1., A12],
-                   [0., 0., A22]]) * dt
-
-    Bd = np.array([[0.], [0.], [1. / tau]]) * dt
-
-    W_D_0 = - (V / WHEEL_BASE) * delta_r / (math.cos(delta_r)**2)
-
-    W_D = np.array([[0.], [W_D_0], [0.]]) * dt
-
     # make simulator with coninuous matrix
-    init_xs_lead = np.array([5., 0., 0. ,0.])
+    init_xs_lead = np.array([0., 0., 0. ,0.])
     init_xs_follow = np.array([0., 0., 0., 0.])
     lead_car = WheeledSystem(init_states=init_xs_lead)
     follow_car = WheeledSystem(init_states=init_xs_follow)
 
+    # make system model
+    lead_car_system_model = SystemModel()
+    follow_car_system_model = SystemModel()
+
+    # reference
+    traj_ref_xs, traj_ref_ys = make_sample_traj(int(simulation_time/dt))
+    traj_ref = np.array([traj_ref_xs, traj_ref_ys])
+
+    # nearest point
+    index_min, nearest_point = search_nearest_point(traj_ref, lead_car.xs[:2].reshape(2, 1))
+
+    # get traj's curvature
+    NUM_SKIP = 5
+    angles, curvatures = calc_curvatures(traj_ref[:, index_min:index_min + PREDICT_STEP + NUM_SKIP], PREDICT_STEP, NUM_SKIP)
+
     # evaluation function weight
     Q = np.diag([1., 1., 1.])
     R = np.diag([5.])
-    pre_step = 15
+
+    # System model update
+    V = 4.0 # in pratical we should calc from the state
+    lead_car_system_model.calc_predict_sytem_model(V, curvatures, PREDICT_STEP)
+    follow_car_system_model.calc_predict_sytem_model(V, curvatures, PREDICT_STEP)
 
     # make controller with discreted matrix
-    # please check the solver, if you want to use the scipy, set the MpcController_scipy
-    lead_controller = MpcController_cvxopt(Ad, Bd, W_D, Q, R, pre_step,
+    lead_controller = IterativeMpcController(lead_car_system_model, Q, R, PREDICT_STEP,
                                dt_input_upper=np.array([30 * dt]), dt_input_lower=np.array([-30 * dt]),
                                input_upper=np.array([30.]), input_lower=np.array([-30.]))
 
-    follow_controller = MpcController_cvxopt(Ad, Bd, W_D, Q, R, pre_step,
+    follow_controller = IterativeMpcController(follow_car_system_model, Q, R, PREDICT_STEP,
                                dt_input_upper=np.array([30 * dt]), dt_input_lower=np.array([-30 * dt]),
                                input_upper=np.array([30.]), input_lower=np.array([-30.]))
 
+    # initialize
     lead_controller.initialize_controller()
     follow_controller.initialize_controller()
-
-    # reference
-    lead_reference = np.array([[0., 0., 0.] for _ in range(pre_step)]).flatten()
-    ref = np.array([[0.], [0.]])
-
+    
     for i in range(iteration_num):
         print("simulation time = {0}".format(i))
-
-        # make lead car's move
-        if i > int(iteration_num / 3):
-            ref = np.array([[0.], [4.]])
 
         ## lead
         # world traj
         lead_states = lead_car.xs
 
+        # nearest point
+        index_min, nearest_point = search_nearest_point(traj_ref, lead_car.xs[:2].reshape(2, 1))
+        # end check
+        if len(traj_ref_ys) <= index_min + 10:
+            print("break")
+            break            
+
+        # get traj's curvature
+        NUM_SKIP = 2
+        angles, curvatures = calc_curvatures(traj_ref[:, index_min:index_min + PREDICT_STEP + NUM_SKIP], PREDICT_STEP, NUM_SKIP)
+
+        # System model update
+        V = 4.0 # in pratical we should calc from the state
+        lead_car_system_model.calc_predict_sytem_model(V, curvatures, PREDICT_STEP)
+
         # transformation
-        relative_ref = coordinate_transformation_in_position(ref, lead_states[:2])
-        relative_ref = coordinate_transformation_in_angle(relative_ref, lead_states[2])
+        # car
+        relative_car_position = coordinate_transformation_in_position(lead_states[:2].reshape(2, 1), nearest_point)
+        relative_car_position = coordinate_transformation_in_angle(relative_car_position, angles[0])
+
+        relative_car_angle = lead_states[2] - angles[0]
+        relative_car_state = np.hstack((relative_car_position[1], relative_car_angle, lead_states[-1]))
 
         # make ref
-        lead_reference = np.array([[ref[1, 0], 0., 0.] for _ in range(pre_step)]).flatten()
+        lead_reference = np.array([[0., 0., 0.] for i in range(PREDICT_STEP)]).flatten()
 
-        alpha = math.atan2(relative_ref[1], relative_ref[0])
-        R = np.linalg.norm(relative_ref) / 2 * math.sin(alpha)
-
-        print(R)
-        input()
-
-        V = 7.0 
-        delta_r = math.atan2(WHEEL_BASE, R)
-
-        A12 = (V / WHEEL_BASE) / (math.cos(delta_r)**2)
-        A22 = (1. - 1. / tau)
-
-        Ad = np.array([[1., V,   0.], 
-                    [0., 1., A12],
-                    [0., 0., A22]]) * dt
-
-        Bd = np.array([[0.], [0.], [1. / tau]]) * dt
-
-        W_D_0 = - (V / WHEEL_BASE) * delta_r / (math.cos(delta_r)**2)
-
-        W_D = np.array([[0.], [W_D_0], [0.]]) * dt
+        print("relative car state = {}".format(relative_car_state))
+        print("nearest point = {}".format(nearest_point))
+        # input()
 
         # update system matrix
-        lead_controller.update_system_model(Ad, Bd, W_D)
+        lead_controller.update_system_model(lead_car_system_model)
 
-        lead_opt_u = lead_controller.calc_input(np.zeros(3), lead_reference)
+        lead_opt_u = lead_controller.calc_input(relative_car_state, lead_reference)
+
         lead_opt_u = np.hstack((np.array([V]), lead_opt_u))
 
-        
-        ## follow
-        # make follow car
-        follow_reference = np.array([lead_states[1:] for _ in range(pre_step)]).flatten()
-        follow_states = follow_car.xs
-       
-        follow_opt_u = follow_controller.calc_input(follow_states[1:], follow_reference)
-        follow_opt_u = np.hstack((np.array([V]), follow_opt_u))
+        print("opt_u = {}".format(lead_opt_u))
+        # input()
         
         lead_car.update_state(lead_opt_u, dt=dt)
-        follow_car.update_state(follow_opt_u, dt=dt)
+        follow_car.update_state(lead_opt_u, dt=dt)
 
     # figures and animation
     lead_history_states = np.array(lead_car.history_xs)
     follow_history_states = np.array(follow_car.history_xs)
 
+    """
     time_history_fig = plt.figure()
     x_fig = time_history_fig.add_subplot(311)
     y_fig = time_history_fig.add_subplot(312)
@@ -298,6 +416,7 @@ def main():
     
     input_history_fig.tight_layout()
     plt.show()
+    """
 
     animdrawer = AnimDrawer([lead_history_states, follow_history_states])
     animdrawer.draw_anim()
