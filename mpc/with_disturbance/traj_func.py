@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
-def make_sample_traj(NUM, dt=0.01, a=1.):
+def make_sample_traj(NUM, dt=0.01, a=5.):
     """
     make sample trajectory
     Parameters

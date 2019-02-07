@@ -102,6 +102,7 @@ class AnimDrawer():
         """
         self.lead_car_history_state = objects[0]
         self.follow_car_history_state = objects[1]
+        self.traj = objects[2]
         
         self.history_xs = [self.lead_car_history_state[:, 0], self.follow_car_history_state[:, 0]]
         self.history_ys = [self.lead_car_history_state[:, 1], self.follow_car_history_state[:, 1]]
@@ -153,7 +154,7 @@ class AnimDrawer():
         self.axis.set_aspect('equal', adjustable='box')
 
         # (2) set the xlim and ylim        
-        self.axis.set_xlim(-2, 50)
+        self.axis.set_xlim(-2, 20)
         self.axis.set_ylim(-10, 10)         
 
     def _set_img(self):
@@ -168,11 +169,12 @@ class AnimDrawer():
             temp_img, = self.axis.plot([], [], color=obj_color_list[i], linestyle=obj_styles[i])
             self.object_imgs.append(temp_img)
         
-        traj_color_list = ["k", "m"]
+        traj_color_list = ["k", "m", "b"]
 
         for i in range(len(traj_color_list)):
             temp_img, = self.axis.plot([],[], color=traj_color_list[i], linestyle="dashed")
             self.traj_imgs.append(temp_img)
+
     
     def _update_anim(self, i):
         """the update animation
@@ -231,3 +233,5 @@ class AnimDrawer():
         """
         for j in range(2):
             self.traj_imgs[j].set_data(self.history_xs[j][:i], self.history_ys[j][:i])
+
+        self.traj_imgs[2].set_data(self.traj[0, :], self.traj[1, :])

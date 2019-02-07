@@ -9,6 +9,7 @@ from animation import AnimDrawer
 # from control import matlab
 from coordinate_trans import coordinate_transformation_in_angle, coordinate_transformation_in_position
 from traj_func import make_sample_traj
+from func_curvature import calc_curvatures
 
 class WheeledSystem():
     """SampleSystem, this is the simulator
@@ -164,7 +165,7 @@ class SystemModel():
     Q : numpy.ndarray
     R : numpy.ndarray
     """
-    def __init__(self, tau = 0.15, dt = 0.016):
+    def __init__(self, tau = 0.01, dt = 0.01):
         """
         Parameters
         -----------
@@ -191,7 +192,7 @@ class SystemModel():
         for i in range(predict_step):
             delta_r = math.atan2(self.WHEEL_BASE, 1. / curvatures[i])
 
-            A12 = (V / self.WHEEL_BASE) / math.cos(delta_r)
+            A12 = (V / self.WHEEL_BASE) / (math.cos(delta_r)**2)
             A22 = (1. - 1. / self.tau * self.dt)
 
             Ad = np.array([[1., V * self.dt,   0.], 
@@ -200,7 +201,9 @@ class SystemModel():
 
             Bd = np.array([[0.], [0.], [1. / self.tau]]) * self.dt
 
-            W_D_0 = (V / self.WHEEL_BASE) * delta_r / (math.cos(delta_r)**2) - V * curvatures[i]
+            # -v*curvature + v/L*(tan(delta_r)-delta_r*cos_delta_r_squared_inv);
+            # W_D_0 = V / self.WHEEL_BASE * (delta_r / (math.cos(delta_r)**2)
+            W_D_0 = -V * curvatures[i] + (V / self.WHEEL_BASE) * (math.tan(delta_r) - delta_r / (math.cos(delta_r)**2))
 
             W_D = np.array([[0.], [W_D_0], [0.]]) * self.dt
 
@@ -228,49 +231,17 @@ def search_nearest_point(points, base_point):
 
     return index_min, points[:, index_min]
 
-def calc_curvatures(traj_ref, predict_step, num_skip):
-    """
-    Parameters
-    -----------
-    points : numpy.ndarray, shape is (2, predict_step + num_skip)
-    predict_step : int
-    num_skip : int
-
-    Returns
-    -------
-    angles : list
-        list of angle
-    curvatures : list
-        list of curvature
-    """
-    angles = []
-    curvatures = []
-
-    for i in range(predict_step):
-        
-        temp = traj_ref[:, i + num_skip] - traj_ref[:, i]
-        alpha = math.atan2(temp[1], temp[0])
-
-        angles.append(alpha)
-
-        distance = np.linalg.norm(temp) 
-        R = distance / (2. * math.sin(alpha)) 
-        curvatures.append(1. / R)
-
-    # print("curvatures = {}".format(curvatures))
-    
-    return angles, curvatures
 
 def main():
     # parameters
     dt = 0.01
-    simulation_time = 10 # in seconds
-    PREDICT_STEP = 15
+    simulation_time = 20 # in seconds
+    PREDICT_STEP = 20
     iteration_num = int(simulation_time / dt)
 
     # make simulator with coninuous matrix
-    init_xs_lead = np.array([0., 0., 0. ,0.])
-    init_xs_follow = np.array([0., 0., 0., 0.])
+    init_xs_lead = np.array([0., 0., math.pi/4, 0.])
+    init_xs_follow = np.array([0., 0., math.pi/4, 0.])
     lead_car = WheeledSystem(init_states=init_xs_lead)
     follow_car = WheeledSystem(init_states=init_xs_follow)
 
@@ -287,14 +258,14 @@ def main():
 
     # get traj's curvature
     NUM_SKIP = 5
-    angles, curvatures = calc_curvatures(traj_ref[:, index_min:index_min + PREDICT_STEP + NUM_SKIP], PREDICT_STEP, NUM_SKIP)
+    angles, curvatures = calc_curvatures(traj_ref[:, index_min:index_min + PREDICT_STEP + 2 * NUM_SKIP], PREDICT_STEP, NUM_SKIP)
 
     # evaluation function weight
-    Q = np.diag([1., 1., 1.])
-    R = np.diag([5.])
+    Q = np.diag([100., 1., 1.])
+    R = np.diag([0.01])
 
     # System model update
-    V = 4.0 # in pratical we should calc from the state
+    V = 2.0 # in pratical we should calc from the state
     lead_car_system_model.calc_predict_sytem_model(V, curvatures, PREDICT_STEP)
     follow_car_system_model.calc_predict_sytem_model(V, curvatures, PREDICT_STEP)
 
@@ -321,13 +292,12 @@ def main():
         # nearest point
         index_min, nearest_point = search_nearest_point(traj_ref, lead_car.xs[:2].reshape(2, 1))
         # end check
-        if len(traj_ref_ys) <= index_min + 10:
+        if len(traj_ref_ys) <= index_min + PREDICT_STEP + 2 * NUM_SKIP:
             print("break")
             break            
 
         # get traj's curvature
-        NUM_SKIP = 2
-        angles, curvatures = calc_curvatures(traj_ref[:, index_min:index_min + PREDICT_STEP + NUM_SKIP], PREDICT_STEP, NUM_SKIP)
+        angles, curvatures = calc_curvatures(traj_ref[:, index_min:index_min + PREDICT_STEP + 2 * NUM_SKIP], PREDICT_STEP, NUM_SKIP)
 
         # System model update
         V = 4.0 # in pratical we should calc from the state
@@ -341,8 +311,13 @@ def main():
         relative_car_angle = lead_states[2] - angles[0]
         relative_car_state = np.hstack((relative_car_position[1], relative_car_angle, lead_states[-1]))
 
+        # traj_ref
+        relative_traj = coordinate_transformation_in_position(traj_ref[:, index_min:index_min + PREDICT_STEP], nearest_point)
+        relative_traj = coordinate_transformation_in_angle(relative_traj, angles[0])
+        relative_ref_angle = np.array(angles) - angles[0]
+
         # make ref
-        lead_reference = np.array([[0., 0., 0.] for i in range(PREDICT_STEP)]).flatten()
+        lead_reference = np.array([[relative_traj[1, -1], relative_ref_angle[i], 0.] for i in range(PREDICT_STEP)]).flatten()
 
         print("relative car state = {}".format(relative_car_state))
         print("nearest point = {}".format(nearest_point))
@@ -418,7 +393,7 @@ def main():
     plt.show()
     """
 
-    animdrawer = AnimDrawer([lead_history_states, follow_history_states])
+    animdrawer = AnimDrawer([lead_history_states, follow_history_states, traj_ref])
     animdrawer.draw_anim()
 
 if __name__ == "__main__":
