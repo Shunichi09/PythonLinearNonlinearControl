@@ -265,7 +265,7 @@ def main():
     R = np.diag([0.01])
 
     # System model update
-    V = 2.0 # in pratical we should calc from the state
+    V = 4.0 # in pratical we should calc from the state
     lead_car_system_model.calc_predict_sytem_model(V, curvatures, PREDICT_STEP)
     follow_car_system_model.calc_predict_sytem_model(V, curvatures, PREDICT_STEP)
 
