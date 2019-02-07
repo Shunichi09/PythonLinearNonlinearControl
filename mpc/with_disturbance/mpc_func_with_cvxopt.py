@@ -1,6 +1,4 @@
 import numpy as np
-np.set_printoptions(threshold=np.inf)
-
 import matplotlib.pyplot as plt
 import math
 import copy
