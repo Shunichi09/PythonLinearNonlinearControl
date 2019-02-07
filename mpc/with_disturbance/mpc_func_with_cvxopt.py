@@ -150,6 +150,15 @@ class MpcController():
             self.dist_mat = np.hstack((self.dist_mat, temp_mat))
 
         print("dist_mat = \n{0}".format(self.dist_mat))
+        
+        W_Ds = copy.deepcopy(self.W_D)
+
+        for _ in range(self.pre_step - 1):
+            W_Ds = np.vstack((W_Ds, self.W_D))
+        
+        self.dist_mat = np.dot(self.dist_mat, W_Ds)
+
+        print("dist_mat = \n{0}".format(self.dist_mat))
 
         # evaluation function weight
         diag_Qs = np.array([np.diag(self.Q) for _ in range(self.pre_step)])
@@ -217,7 +226,7 @@ class MpcController():
 
         # about state
         print("check the matrix!! if you think rite, plese push enter")
-        input()
+        # input()
 
     def calc_input(self, states, references):
         """calculate optimal input
