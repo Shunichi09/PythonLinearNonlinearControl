@@ -4,6 +4,8 @@ import math
 import copy
 
 from cvxopt import matrix, solvers
+import cvxopt
+cvxopt.solvers.options['show_progress'] = False # not display
 
 class IterativeMpcController():
     """

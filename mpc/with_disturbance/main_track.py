@@ -236,7 +236,7 @@ def main():
     # parameters
     dt = 0.01
     simulation_time = 20 # in seconds
-    PREDICT_STEP = 20
+    PREDICT_STEP = 15
     iteration_num = int(simulation_time / dt)
 
     # make simulator with coninuous matrix
@@ -258,14 +258,15 @@ def main():
 
     # get traj's curvature
     NUM_SKIP = 5
-    angles, curvatures = calc_curvatures(traj_ref[:, index_min:index_min + PREDICT_STEP + 2 * NUM_SKIP], PREDICT_STEP, NUM_SKIP)
+    MARGIN = 10
+    angles, curvatures = calc_curvatures(traj_ref[:, index_min + MARGIN:index_min + PREDICT_STEP + 2 * NUM_SKIP + MARGIN], PREDICT_STEP, NUM_SKIP)
 
     # evaluation function weight
     Q = np.diag([100., 1., 1.])
     R = np.diag([0.01])
 
     # System model update
-    V = 4.0 # in pratical we should calc from the state
+    V = 3.0 # in pratical we should calc from the state
     lead_car_system_model.calc_predict_sytem_model(V, curvatures, PREDICT_STEP)
     follow_car_system_model.calc_predict_sytem_model(V, curvatures, PREDICT_STEP)
 
@@ -292,12 +293,12 @@ def main():
         # nearest point
         index_min, nearest_point = search_nearest_point(traj_ref, lead_car.xs[:2].reshape(2, 1))
         # end check
-        if len(traj_ref_ys) <= index_min + PREDICT_STEP + 2 * NUM_SKIP:
+        if len(traj_ref_ys) <= index_min + PREDICT_STEP + 2 * NUM_SKIP + MARGIN:
             print("break")
             break            
 
         # get traj's curvature
-        angles, curvatures = calc_curvatures(traj_ref[:, index_min:index_min + PREDICT_STEP + 2 * NUM_SKIP], PREDICT_STEP, NUM_SKIP)
+        angles, curvatures = calc_curvatures(traj_ref[:, index_min+MARGIN:index_min + PREDICT_STEP + 2 * NUM_SKIP + MARGIN], PREDICT_STEP, NUM_SKIP)
 
         # System model update
         V = 4.0 # in pratical we should calc from the state
