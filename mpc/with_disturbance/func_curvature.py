@@ -138,6 +138,22 @@ def calc_curvatures(traj_ref, predict_step, num_skip):
 
     return angles, curvatures
 
+def calc_ideal_vel(traj_ref, dt):
+    """
+    Parameters
+    ------------
+    traj_ref : numpy.ndarray, shape (2, N)
+        these points should follow subseqently
+    dt : float
+        sampling time of system
+    """
+    # end point and start point
+    diff = traj_ref[:, -1] - traj_ref[:, 0] 
+    distance = np.sqrt(np.sum(diff**2))
+
+    V = distance / (dt * traj_ref.shape[1])
+
+    return V
 
 def main():
     """

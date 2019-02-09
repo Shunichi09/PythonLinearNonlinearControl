@@ -11,11 +11,11 @@ class IterativeMpcController():
     """
     Attributes
     ------------
-    A : numpy.ndarray
+    Ad_s : list of numpy.ndarray
         system matrix
-    B : numpy.ndarray
+    Bd_s : list of numpy.ndarray
         input matrix
-    W_D : numpy.ndarray
+    W_D_s : list of numpy.ndarray
         distubance matrix in state equation
     Q : numpy.ndarray
         evaluation function weight for states
@@ -107,7 +107,7 @@ class IterativeMpcController():
 
             A_factorials.append(temp_mat) # after we use this factorials
             
-        print("phi_mat = \n{0}".format(self.phi_mat))
+        # print("phi_mat = \n{0}".format(self.phi_mat))
 
         self.gamma_mat = copy.deepcopy(self.Bd_s[0])
         gammma_mat_temp = copy.deepcopy(self.Bd_s[0])
@@ -117,7 +117,7 @@ class IterativeMpcController():
             gammma_mat_temp = temp_1_mat + gammma_mat_temp
             self.gamma_mat = np.vstack((self.gamma_mat, gammma_mat_temp))
 
-        print("gamma_mat = \n{0}".format(self.gamma_mat))
+        # print("gamma_mat = \n{0}".format(self.gamma_mat))
 
         self.theta_mat = copy.deepcopy(self.gamma_mat)
 
@@ -127,25 +127,25 @@ class IterativeMpcController():
 
             self.theta_mat = np.hstack((self.theta_mat, temp_mat))
 
-        print("theta_mat = \n{0}".format(self.theta_mat))
+        # print("theta_mat = \n{0}".format(self.theta_mat))
         
         # disturbance
-        print("A_factorials_mat = \n{0}".format(A_factorials))
+        # print("A_factorials_mat = \n{0}".format(A_factorials))
         A_factorials_mat = np.array(A_factorials).reshape(-1, self.state_size)
-        print("A_factorials_mat = \n{0}".format(A_factorials_mat))
+        # print("A_factorials_mat = \n{0}".format(A_factorials_mat))
 
         eye = np.eye(self.state_size)
         self.dist_mat = np.vstack((eye, A_factorials_mat[:-self.state_size, :]))
         base_mat = copy.deepcopy(self.dist_mat)
 
-        print("base_mat = \n{0}".format(base_mat))
+        # print("base_mat = \n{0}".format(base_mat))
 
         for i in range(self.pre_step - 1):
             temp_mat = np.zeros_like(A_factorials_mat)
             temp_mat[int((i + 1)*self.state_size): , :] = base_mat[:-int((i + 1)*self.state_size) , :]
             self.dist_mat = np.hstack((self.dist_mat, temp_mat))
 
-        print("dist_mat = \n{0}".format(self.dist_mat))
+        # print("dist_mat = \n{0}".format(self.dist_mat))
         
         W_Ds = copy.deepcopy(self.W_D_s[0])
 
@@ -154,7 +154,7 @@ class IterativeMpcController():
         
         self.dist_mat = np.dot(self.dist_mat, W_Ds)
 
-        print("dist_mat = \n{0}".format(self.dist_mat))
+        # print("dist_mat = \n{0}".format(self.dist_mat))
 
         # evaluation function weight
         diag_Qs = np.array([np.diag(self.Q) for _ in range(self.pre_step)])
@@ -163,8 +163,8 @@ class IterativeMpcController():
         self.Qs = np.diag(diag_Qs.flatten())
         self.Rs = np.diag(diag_Rs.flatten())
 
-        print("Qs = \n{0}".format(self.Qs))
-        print("Rs = \n{0}".format(self.Rs))
+        # print("Qs = \n{0}".format(self.Qs))
+        # print("Rs = \n{0}".format(self.Rs))
 
         # constraints
         # about dt U
@@ -175,7 +175,7 @@ class IterativeMpcController():
                 self.F[i * 2: (i + 1) * 2, i] = np.array([1.,  -1.])
                 temp_F = copy.deepcopy(self.F)
 
-            print("F = \n{0}".format(self.F))
+            # print("F = \n{0}".format(self.F))
 
             for i in range(self.pre_step - 1):
                 temp_F = copy.deepcopy(temp_F)
@@ -195,9 +195,9 @@ class IterativeMpcController():
 
             self.f = np.array([temp_f for _ in range(self.pre_step)]).flatten()
 
-            print("F = \n{0}".format(self.F))
-            print("F1 = \n{0}".format(self.F1))
-            print("f = \n{0}".format(self.f))
+            # print("F = \n{0}".format(self.F))
+            # print("F1 = \n{0}".format(self.F1))
+            # print("f = \n{0}".format(self.f))
 
         # about dt_u
         if self.dt_input_lower is not None:
@@ -217,8 +217,8 @@ class IterativeMpcController():
 
             self.omega = np.array([temp_omega for _ in range(self.pre_step)]).flatten()
 
-            print("W = \n{0}".format(self.W))
-            print("omega = \n{0}".format(self.omega))
+            # print("W = \n{0}".format(self.W))
+            # print("omega = \n{0}".format(self.omega))
 
         # about state
         print("check the matrix!! if you think rite, plese push enter")
@@ -235,8 +235,9 @@ class IterativeMpcController():
 
         References
         ------------
-        opt_input : numpy.ndarray, shape(input_length, )
+        opt_u : numpy.ndarray, shape(input_length, )
             optimal input
+        all_opt_u  : numpy.ndarray, shape(PREDICT_STEP, input_length)
         """
         temp_1 = np.dot(self.phi_mat, states.reshape(-1, 1))
         temp_2 = np.dot(self.gamma_mat, self.history_us[-1].reshape(-1, 1))
@@ -277,11 +278,19 @@ class IterativeMpcController():
         opt_dt_us = list(opt_result['x'])
         
         opt_u = opt_dt_us[:self.input_size] + self.history_us[-1]
+
+        # calc all predit u
+        all_opt_u = [copy.deepcopy(opt_u)]
+        temp_u = copy.deepcopy(opt_u)
+
+        for i in range(1, self.pre_step):
+            temp_u += opt_dt_us[i * self.input_size: (i + 1) * self.input_size]
+            all_opt_u.append(copy.deepcopy(temp_u))
         
         # save
         self.history_us.append(opt_u)
 
-        return opt_u
+        return opt_u, np.array(all_opt_u)
 
     def update_system_model(self, system_model):
         """update system model
