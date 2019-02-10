@@ -29,7 +29,7 @@ I implemented this, so if you know about the detail please go to "IteraticeMPC_f
 
 <img src = https://github.com/Shunichi09/linear_nonlinear_control/blob/demo_gif/mpc/extend/animation_all.gif width = 70%>
 
-<img src = https://github.com/Shunichi09/linear_nonlinear_control/blob/demo_gif/mpc/basic/animation_zoom.gif width = 70%>
+<img src = https://github.com/Shunichi09/linear_nonlinear_control/blob/demo_gif/mpc/extend/animation_zoom.gif width = 70%>
 
 # Usage
 
