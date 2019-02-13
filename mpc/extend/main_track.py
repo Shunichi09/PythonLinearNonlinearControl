@@ -317,7 +317,7 @@ def main():
     # input()
 
     # evaluation function weight
-    Q = np.diag([100., 1000., 1.])
+    Q = np.diag([1000000., 10., 1.])
     R = np.diag([0.1])
 
     # System model update
