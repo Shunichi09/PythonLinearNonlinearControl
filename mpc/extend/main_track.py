@@ -4,7 +4,7 @@ import math
 import copy
 
 # from mpc_func_with_cvxopt import MpcController as MpcController_cvxopt
-from iterative_MPC import IterativeMpcController
+from extended_MPC import IterativeMpcController
 from animation import AnimDrawer
 # from control import matlab
 from coordinate_trans import coordinate_transformation_in_angle, coordinate_transformation_in_position
