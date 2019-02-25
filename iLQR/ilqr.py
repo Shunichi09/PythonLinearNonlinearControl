@@ -87,16 +87,23 @@ class iLQRController():
         NOTE : 拡張する説ありますがとりあえず飛ばします
         """
         # total cost
-        l = np.sum(us**2)
+        # quadratic のもののみ計算
+        R_11 = 1. # terminal u thorottle cost weight
+        R_22 = 0.01 # terminal u steering cost weight
+
+        l = np.dot(us.T, np.dot(np.diag([R_11, R_22]), us))
 
         # compute derivatives of cost
         l_x = np.zeros(self.STATE_SIZE)
         l_xx = np.zeros((self.STATE_SIZE, self.STATE_SIZE))
 
-        # quadratic のもののみ計算
-        R = 0.01
-        l_u = 2. * us * R
-        l_uu = 2. * np.eye(self.INPUT_SIZE) * R
+        l_u1 = 2. * us[0] * R_11
+        l_u2 = 2. * us[1] * R_22
+
+        l_u = np.array([l_u1, l_u2])
+
+        l_uu = 2. * np.diag([R_11, R_22])
+        
         l_ux = np.zeros((self.INPUT_SIZE, self.STATE_SIZE))
 
         # returned in an array for easy multiplication by time step 
@@ -114,11 +121,13 @@ class iLQRController():
         l_x = np.zeros((self.STATE_SIZE))
         l_xx = np.zeros((self.STATE_SIZE, self.STATE_SIZE))
         """
-        Q_11 = 1.e4 # terminal x cost weight
-        Q_22 = 1.e4 # terminal y cost weight
-        Q_33 = 1.e-1 # terminal theta cost weight
+        Q_11 = 10. # terminal x cost weight
+        Q_22 = 10. # terminal y cost weight
+        Q_33 = 0.0001 # terminal theta cost weight
 
-        l = np.sum((self.simulator.xs - self.target)**2)
+        error = self.simulator.xs - self.target
+
+        l = np.dot(error.T, np.dot(np.diag([Q_11, Q_22, Q_33]), error))
         
         # about L_x
         l_x1 = 2. * (x[0] - self.target[0]) * Q_11
@@ -140,8 +149,12 @@ class iLQRController():
         """  
 
         A = np.zeros((self.STATE_SIZE, self.STATE_SIZE))
+        A_ideal = np.zeros((self.STATE_SIZE, self.STATE_SIZE))
+        
         B = np.zeros((self.STATE_SIZE, self.INPUT_SIZE))
+        B_ideal = np.zeros((self.STATE_SIZE, self.INPUT_SIZE))
 
+    
         eps = 1e-4 # finite differences epsilon
 
         for ii in range(self.STATE_SIZE):
@@ -154,6 +167,14 @@ class iLQRController():
             state_dec,_ = self.plant_dynamics(dec_x, u.copy())
             A[:, ii] = (state_inc - state_dec) / (2 * eps)
 
+
+        A_ideal[0, 2] = -np.sin(x[2]) * u[1]
+        A_ideal[1, 2] = np.cos(x[2]) * u[1]
+        
+        # print("A = \n{}".format(A))
+        # print("ideal A = \n{}".format(A_ideal))
+
+        
         for ii in range(self.INPUT_SIZE):
             # calculate partial differential w.r.t. u
             inc_u = u.copy()
@@ -164,7 +185,16 @@ class iLQRController():
             state_dec,_ = self.plant_dynamics(x.copy(), dec_u)
             B[:, ii] = (state_inc - state_dec) / (2 * eps)
 
-        return A, B
+        B_ideal[0, 0] = np.cos(x[2])
+        B_ideal[1, 0] = np.sin(x[2])
+        B_ideal[2, 1] = 1.
+        
+        # print("B = \n{}".format(B))
+        # print("ideal B = \n{}".format(B_ideal))
+        
+        # input()
+
+        return A_ideal, B_ideal
 
     def ilqr(self, x0, U=None): 
         """ use iterative linear quadratic regulation to find a control 
