@@ -9,7 +9,6 @@ Now you can see the examples of control theories as following
 - **Nonlinear Model Predictive Control with CGMRES**
 - **Linear Model Predictive Control**(as generic function such as matlab tool box)
 - **Extended Linear Model Predictive Control for vehicle model**
-- **Iterative LQR (linear quadratic regulator)**
 
 # Usage and Details
 you can see the usage in each folder
