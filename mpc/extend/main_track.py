@@ -4,12 +4,12 @@ import math
 import copy
 
 # from mpc_func_with_cvxopt import MpcController as MpcController_cvxopt
-from iterative_MPC import IterativeMpcController
+from extended_MPC import IterativeMpcController
 from animation import AnimDrawer
 # from control import matlab
 from coordinate_trans import coordinate_transformation_in_angle, coordinate_transformation_in_position
 from traj_func import make_sample_traj
-from func_curvature import calc_curvatures
+from func_curvature import calc_curvatures, calc_ideal_vel
 
 class WheeledSystem():
     """SampleSystem, this is the simulator
@@ -21,6 +21,11 @@ class WheeledSystem():
         system states, [x, y, phi, beta]
     history_xs : list
         time history of state
+    tau : float
+        time constant of tire
+    FRONT_WHEEL_BASE : float
+    REAR_WHEEL_BASE : float
+    predict_xs : 
     """
     def __init__(self, init_states=None):
         """
@@ -41,6 +46,7 @@ class WheeledSystem():
             self.xs = copy.deepcopy(init_states)
 
         self.history_xs = [init_states]
+        self.history_predict_xs = []
 
     def update_state(self, us, dt=0.01):
         """
@@ -51,7 +57,6 @@ class WheeledSystem():
         dt : float in seconds, optional
             sampling time of simulation, default is 0.01 [s]
         """
-        # for theta 1, theta 1 dot, theta 2, theta 2 dot
         k0 = [0.0 for _ in range(self.NUM_STATE)]
         k1 = [0.0 for _ in range(self.NUM_STATE)]
         k2 = [0.0 for _ in range(self.NUM_STATE)]
@@ -80,7 +85,50 @@ class WheeledSystem():
         # save
         save_states = copy.deepcopy(self.xs)
         self.history_xs.append(save_states)
-        print(self.xs)
+        # print(self.xs)
+
+    def predict_state(self, us, dt=0.01):
+        """make predict state by using optimal input made by MPC
+        Paramaters
+        -----------
+        us : array-like, shape(2, N)
+            optimal input made by MPC
+        dt : float in seconds, optional
+            sampling time of simulation, default is 0.01 [s]
+        """
+
+        xs = copy.deepcopy(self.xs)
+        predict_xs = [copy.deepcopy(xs)]
+
+        for i in range(us.shape[1]):
+            k0 = [0.0 for _ in range(self.NUM_STATE)]
+            k1 = [0.0 for _ in range(self.NUM_STATE)]
+            k2 = [0.0 for _ in range(self.NUM_STATE)]
+            k3 = [0.0 for _ in range(self.NUM_STATE)]
+
+            functions = [self._func_x_1, self._func_x_2, self._func_x_3, self._func_x_4]
+
+            # solve Runge-Kutta
+            for i, func in enumerate(functions):
+                k0[i] = dt * func(xs[0], xs[1], xs[2], xs[3], us[0, i], us[1, i])
+
+            for i, func in enumerate(functions):
+                k1[i] = dt * func(xs[0] + k0[0]/2., xs[1] + k0[1]/2., xs[2] + k0[2]/2., xs[3] + k0[3]/2., us[0, i], us[1, i])
+            
+            for i, func in enumerate(functions):
+                k2[i] = dt * func(xs[0] + k1[0]/2., xs[1] + k1[1]/2., xs[2] + k1[2]/2., xs[3] + k1[3]/2., us[0, i], us[1, i])
+            
+            for i, func in enumerate(functions):
+                k3[i] =  dt * func(xs[0] + k2[0], xs[1] + k2[1], xs[2] + k2[2], xs[3] + k2[3], us[0, i], us[1, i])
+            
+            xs[0] += (k0[0] + 2. * k1[0] + 2. * k2[0] + k3[0]) / 6.
+            xs[1] += (k0[1] + 2. * k1[1] + 2. * k2[1] + k3[1]) / 6.
+            xs[2] += (k0[2] + 2. * k1[2] + 2. * k2[2] + k3[2]) / 6.
+            xs[3] += (k0[3] + 2. * k1[3] + 2. * k2[3] + k3[3]) / 6.
+
+            predict_xs.append(copy.deepcopy(xs))
+
+        self.history_predict_xs.append(np.array(predict_xs))
 
     def _func_x_1(self, y_1, y_2, y_3, y_4, u_1, u_2):
         """
@@ -184,6 +232,7 @@ class SystemModel():
         """
         calc next predict systemo models
         V : float
+            current speed of car
         curvatures : list
             this is the next curvature's list
         predict_step : int
@@ -236,52 +285,53 @@ def main():
     # parameters
     dt = 0.01
     simulation_time = 20 # in seconds
-    PREDICT_STEP = 15
+    PREDICT_STEP = 30
     iteration_num = int(simulation_time / dt)
 
     # make simulator with coninuous matrix
-    init_xs_lead = np.array([0., 0., math.pi/4, 0.])
-    init_xs_follow = np.array([0., 0., math.pi/4, 0.])
+    init_xs_lead = np.array([0., 0., math.pi/6, 0.])
     lead_car = WheeledSystem(init_states=init_xs_lead)
-    follow_car = WheeledSystem(init_states=init_xs_follow)
 
     # make system model
     lead_car_system_model = SystemModel()
-    follow_car_system_model = SystemModel()
 
     # reference
+    history_traj_ref = []
+    history_angle_ref = []
     traj_ref_xs, traj_ref_ys = make_sample_traj(int(simulation_time/dt))
     traj_ref = np.array([traj_ref_xs, traj_ref_ys])
-
+    
     # nearest point
     index_min, nearest_point = search_nearest_point(traj_ref, lead_car.xs[:2].reshape(2, 1))
 
     # get traj's curvature
-    NUM_SKIP = 5
-    MARGIN = 10
+    NUM_SKIP = 3
+    MARGIN = 20
     angles, curvatures = calc_curvatures(traj_ref[:, index_min + MARGIN:index_min + PREDICT_STEP + 2 * NUM_SKIP + MARGIN], PREDICT_STEP, NUM_SKIP)
 
+    # save traj ref
+    history_traj_ref.append(traj_ref[:, index_min + MARGIN:index_min + PREDICT_STEP + 2 * NUM_SKIP + MARGIN])
+    history_angle_ref.append(angles)
+
+    # print(history_traj_ref)
+    # input()
+
     # evaluation function weight
-    Q = np.diag([100., 1., 1.])
-    R = np.diag([0.01])
+    Q = np.diag([1000000., 10., 1.])
+    R = np.diag([0.1])
 
     # System model update
-    V = 3.0 # in pratical we should calc from the state
+    V = calc_ideal_vel(traj_ref, dt) # in pratical we should calc from the state
     lead_car_system_model.calc_predict_sytem_model(V, curvatures, PREDICT_STEP)
-    follow_car_system_model.calc_predict_sytem_model(V, curvatures, PREDICT_STEP)
 
     # make controller with discreted matrix
     lead_controller = IterativeMpcController(lead_car_system_model, Q, R, PREDICT_STEP,
-                               dt_input_upper=np.array([30 * dt]), dt_input_lower=np.array([-30 * dt]),
-                               input_upper=np.array([30.]), input_lower=np.array([-30.]))
+                               dt_input_upper=np.array([1 * dt]), dt_input_lower=np.array([-1 * dt]),
+                               input_upper=np.array([1.]), input_lower=np.array([-1.]))
 
-    follow_controller = IterativeMpcController(follow_car_system_model, Q, R, PREDICT_STEP,
-                               dt_input_upper=np.array([30 * dt]), dt_input_lower=np.array([-30 * dt]),
-                               input_upper=np.array([30.]), input_lower=np.array([-30.]))
 
     # initialize
     lead_controller.initialize_controller()
-    follow_controller.initialize_controller()
     
     for i in range(iteration_num):
         print("simulation time = {0}".format(i))
@@ -292,6 +342,7 @@ def main():
 
         # nearest point
         index_min, nearest_point = search_nearest_point(traj_ref, lead_car.xs[:2].reshape(2, 1))
+
         # end check
         if len(traj_ref_ys) <= index_min + PREDICT_STEP + 2 * NUM_SKIP + MARGIN:
             print("break")
@@ -300,8 +351,12 @@ def main():
         # get traj's curvature
         angles, curvatures = calc_curvatures(traj_ref[:, index_min+MARGIN:index_min + PREDICT_STEP + 2 * NUM_SKIP + MARGIN], PREDICT_STEP, NUM_SKIP)
 
+        # save
+        history_traj_ref.append(traj_ref[:, index_min + MARGIN:index_min + PREDICT_STEP + 2 * NUM_SKIP + MARGIN])
+        history_angle_ref.append(angles)
+
         # System model update
-        V = 4.0 # in pratical we should calc from the state
+        V = calc_ideal_vel(traj_ref, dt) # in pratical we should calc from the state
         lead_car_system_model.calc_predict_sytem_model(V, curvatures, PREDICT_STEP)
 
         # transformation
@@ -318,7 +373,7 @@ def main():
         relative_ref_angle = np.array(angles) - angles[0]
 
         # make ref
-        lead_reference = np.array([[relative_traj[1, -1], relative_ref_angle[i], 0.] for i in range(PREDICT_STEP)]).flatten()
+        lead_reference = np.array([[relative_traj[1, -1], relative_ref_angle[-1], 0.] for i in range(PREDICT_STEP)]).flatten()
 
         print("relative car state = {}".format(relative_car_state))
         print("nearest point = {}".format(nearest_point))
@@ -327,19 +382,27 @@ def main():
         # update system matrix
         lead_controller.update_system_model(lead_car_system_model)
 
-        lead_opt_u = lead_controller.calc_input(relative_car_state, lead_reference)
+        lead_opt_u, all_opt_u = lead_controller.calc_input(relative_car_state, lead_reference)
 
         lead_opt_u = np.hstack((np.array([V]), lead_opt_u))
 
+        all_opt_u = np.stack((np.ones(PREDICT_STEP)*V, all_opt_u.flatten()))
+
         print("opt_u = {}".format(lead_opt_u))
-        # input()
+        print("all_opt_u = {}".format(all_opt_u))
         
+        # predict
+        lead_car.predict_state(all_opt_u, dt=dt)
+
+        # update
         lead_car.update_state(lead_opt_u, dt=dt)
-        follow_car.update_state(lead_opt_u, dt=dt)
+
+        # print(lead_car.history_predict_xs)
+        # input()
 
     # figures and animation
     lead_history_states = np.array(lead_car.history_xs)
-    follow_history_states = np.array(follow_car.history_xs)
+    lead_history_predict_states = lead_car.history_predict_xs
 
     """
     time_history_fig = plt.figure()
@@ -394,7 +457,7 @@ def main():
     plt.show()
     """
 
-    animdrawer = AnimDrawer([lead_history_states, follow_history_states, traj_ref])
+    animdrawer = AnimDrawer([lead_history_states, lead_history_predict_states, traj_ref, history_traj_ref, history_angle_ref])
     animdrawer.draw_anim()
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
-def make_sample_traj(NUM, dt=0.01, a=5.):
+def make_sample_traj(NUM, dt=0.01, a=30.):
     """
     make sample trajectory
     Parameters
@@ -21,9 +21,8 @@ def make_sample_traj(NUM, dt=0.01, a=5.):
     traj_ys = []
 
     for i in range(NUM):
-        traj_xs.append(dt * i)
+        traj_xs.append(i * 0.1)
         traj_ys.append(a * math.sin(dt * i / DELAY))
-
 
     plt.plot(traj_xs, traj_ys)
     plt.show()
