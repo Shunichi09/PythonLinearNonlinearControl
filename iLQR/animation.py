@@ -151,7 +151,7 @@ class AnimDrawer():
         self.history_ths = [self.car_history_state[:, 2]]
 
         # setting up figure
-        self.anim_fig = plt.figure(dpi=150)
+        self.anim_fig = plt.figure()
         self.axis = self.anim_fig.add_subplot(111)
 
         # imgs
@@ -170,7 +170,7 @@ class AnimDrawer():
         self._set_axis()
         self._set_img()
 
-        self.skip_num = 1
+        self.skip_num = 2
         frame_num = int((len(self.history_xs[0])-1) / self.skip_num)
 
         animation = ani.FuncAnimation(self.anim_fig, self._update_anim, interval=interval, frames=frame_num)
