@@ -75,52 +75,6 @@ class TwoWheeledCar():
 
         return self.xs.copy()
     
-    def predict_state(self, init_xs, us, dt=0.01):
-        """make predict state by using optimal input made by MPC
-        Paramaters
-        -----------
-        us : array-like, shape(2, N)
-            optimal input made by MPC
-        dt : float in seconds, optional
-            sampling time of simulation, default is 0.01 [s]
-        """
-        ## test
-        # assert us.shape[0] == 2 and us.shape[1] == 15, "wrong shape"
-
-        xs = copy.deepcopy(init_xs)
-        predict_xs = [copy.deepcopy(xs)]
-
-        for i in range(us.shape[1]):
-            k0 = [0.0 for _ in range(self.NUM_STATE)]
-            k1 = [0.0 for _ in range(self.NUM_STATE)]
-            k2 = [0.0 for _ in range(self.NUM_STATE)]
-            k3 = [0.0 for _ in range(self.NUM_STATE)]
-
-            functions = [self._func_x_1, self._func_x_2, self._func_x_3]
-
-            # solve Runge-Kutta
-            for i, func in enumerate(functions):
-                k0[i] = dt * func(xs[0], xs[1], xs[2], us[0, i], us[1, i])
-
-            for i, func in enumerate(functions):
-                k1[i] = dt * func(xs[0] + k0[0]/2., xs[1] + k0[1]/2., xs[2] + k0[2]/2., us[0, i], us[1, i])
-            
-            for i, func in enumerate(functions):
-                k2[i] = dt * func(xs[0] + k1[0]/2., xs[1] + k1[1]/2., xs[2] + k1[2]/2., us[0, i], us[1, i])
-            
-            for i, func in enumerate(functions):
-                k3[i] =  dt * func(xs[0] + k2[0], xs[1] + k2[1], xs[2] + k2[2], us[0, i], us[1, i])
-            
-            xs[0] += (k0[0] + 2. * k1[0] + 2. * k2[0] + k3[0]) / 6.
-            xs[1] += (k0[1] + 2. * k1[1] + 2. * k2[1] + k3[1]) / 6.
-            xs[2] += (k0[2] + 2. * k1[2] + 2. * k2[2] + k3[2]) / 6.
-
-            predict_xs.append(copy.deepcopy(xs))
-
-        self.history_predict_xs.append(np.array(predict_xs))
-
-        return np.array(predict_xs)
-    
     def initialize_state(self, init_xs):
         """
         initialize the state

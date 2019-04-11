@@ -10,17 +10,36 @@ class iLQRController():
 
     Attributes:
     ------------
-
+    tN : int
+        number of time step
+    STATE_SIZE : int
+        system state size
+    INPUT_SIZE : int
+        system input size
+    dt : float
+        sampling time
+    max_iter : int
+        number of max iteration
+    lamb_factor : int
+        lambda factor is that the adding value to make the matrix of Q _uu be positive
+    lamb_max : float
+        maximum lambda value to make the matrix of Q _uu be positive
+    eps_converge : float
+        threshold value of the iteration
     """
 
-    def __init__(self, N=100, max_iter=400, dt=0.016): 
-        '''
-        n int: length of the control sequence
-        max_iter int: limit on number of optimization iterations
-        '''
-        self.old_target = [None, None]
-
-        self.tN = N # number of timesteps
+    def __init__(self, N=100, max_iter=400, dt=0.01): 
+        """
+        Parameters
+        ----------
+        N : int, optional
+            number of time step, default is 100
+        max_iter : int, optional
+            number of max iteration, default is 400
+        dt : float, optional
+            sampling time, default is 0.01
+        """
+        self.tN = N
         self.STATE_SIZE = 3
         self.INPUT_SIZE = 2
         self.dt = dt
@@ -28,52 +47,55 @@ class iLQRController():
         self.max_iter = max_iter
         self.lamb_factor = 10
         self.lamb_max = 1e4
-        self.eps_converge = 0.001 # exit if relative improvement below threshold
+        self.eps_converge = 0.001
 
-    def calc_input(self, car, x_target, changed=False):
-        """Generates a control signal to move the 
-        arm to the specified target.
-            
-        car : the arm model being controlled NOTE:これが実際にコントロールされるやつ
-        des list : the desired system position
-        x_des np.array: desired task-space force, 
-                        irrelevant here.
+    def calc_input(self, car, x_target):
+        """main loop of iterative LQR
+        
+        Parameters
+        -------------
+        car : model class
+            should have initialize state and update state
+        x_target : numpy.ndarray, shape(STATE_SIZE, )
+            target state
+
+        Returns
+        -----------
+        u : numpy.ndarray, shape(INPUT_SIZE, )
+
+        See also
+        ----------
+        model.py
         """
 
-        # if the target has changed, reset things and re-optimize 
-        # for this movement、目標が変わっている場合があるので確認
-        if changed:
-            self.reset(x_target)
-
-        # Reset k if at the end of the sequence
-        if self.t >= self.tN - 1: # 最初のSTEPのみ計算
-            self.t = 0
+        # initialize
+        self.reset(x_target)
 
         # Compute the optimization
-        """
-        NOTE : ここに条件を追加してもいいかもしれない、何サイクルも回す必要ないし、理想軌道とずれたらとか
-        """
-        if self.t % 1 == 0:
-            x0 = np.zeros(self.STATE_SIZE) # 初期化、速度は0
+        x0 = np.zeros(self.STATE_SIZE)
+        self.simulator, x0 = self.initialize_simulator(car)
+        U = np.copy(self.U)
+        self.X, self.U, cost = self.ilqr(x0, U)
 
-            self.simulator, x0 = self.initialize_simulator(car) # 前の時刻のものを確保
-            
-            U = np.copy(self.U[self.t:]) # 初期入力かなこれ
-            
-            self.X, self.U[self.t:], cost = self.ilqr(x0, U) # 入力列が入ってくる
-
-        self.u = self.U[self.t] 
-
-        # move us a step forward in our control sequence
-        self.t += 1
+        self.u = self.U[self.t] # use only one time step (like MPC)
 
         return self.u
 
     def initialize_simulator(self, car):
-        """ make a copy of the car model, to make sure that the
-        actual car model isn't affected during the iLQR process
+        """ make copy for controller
+        Parameters
+        -------------
+        car : model class
+            should have initialize state and update state
+
+        Returns
+        ----------
+        simulator : model class
+            should have initialize state and update state
+        x0 : numpy.ndarray, shape(STATE_SIZE)
+            initial state of the simulator
         """ 
-        # need to make a copy the real car
+        # copy
         simulator = TwoWheeledCar(deepcopy(car.xs))
 
         return simulator, deepcopy(simulator.xs)
@@ -84,16 +106,29 @@ class iLQRController():
         Parameters
         ------------
         xs : shape(STATE_SIZE, tN + 1)
+            predict state of the system
         us : shape(STATE_SIZE, tN)
+            predict input of the system
+
+        Returns
+        ----------
+        l : float 
+            stage cost
+        l_x : numpy.ndarray, shape(STATE_SIZE, )
+            differential of stage cost by x
+        l_xx : numpy.ndarray, shape(STATE_SIZE, STATE_SIZE) 
+            second order differential of stage cost by x
+        l_u : numpy.ndarray, shape(INPUT_SIZE, )
+            differential of stage cost by u
+        l_uu : numpy.ndarray, shape(INPUT_SIZE, INPUT_SIZE)
+            second order differential of stage cost by uu
+        l_ux numpy.ndarray, shape(INPUT_SIZE, STATE_SIZE)
+            second order differential of stage cost by ux
         """
 
-        """
-        NOTE : 拡張する説ありますがとりあえず飛ばします
-        """
         # total cost
-        # quadratic のもののみ計算
-        R_11 = 0.01 # terminal u thorottle cost weight
-        R_22 = 0.01 # terminal u steering cost weight
+        R_11 = 0.01 # terminal u_v cost weight
+        R_22 = 0.01 # terminal u_th cost weight
 
         l = np.dot(us.T, np.dot(np.diag([R_11, R_22]), us))
 
@@ -110,7 +145,6 @@ class iLQRController():
         
         l_ux = np.zeros((self.INPUT_SIZE, self.STATE_SIZE))
 
-        # returned in an array for easy multiplication by time step 
         return l, l_x, l_xx, l_u, l_uu, l_ux
 
     def cost_final(self, x):
@@ -118,12 +152,17 @@ class iLQRController():
         
         Parameters
         -------------
-        xs : numpy.ndarray, shape(STATE_SIZE,)
+        x : numpy.ndarray, shape(STATE_SIZE,)
+            predict state of the system
 
-        Notes : 
+        Returns
         ---------
-        l_x = np.zeros((self.STATE_SIZE))
-        l_xx = np.zeros((self.STATE_SIZE, self.STATE_SIZE))
+        l : float
+            terminal cost
+        l_x : numpy.ndarray, shape(STATE_SIZE, )
+            differential of stage cost by x
+        l_xx : numpy.ndarray, shape(STATE_SIZE, STATE_SIZE) 
+            second order differential of stage cost by x
         """
         Q_11 = 1. # terminal x cost weight
         Q_22 = 1. # terminal y cost weight
@@ -161,7 +200,13 @@ class iLQRController():
             differential of the model /alpha X
         B : numpy.ndarray, shape(STATE_SIZE, INPUT_SIZE)
             differential of the model /alpha U
-        """  
+
+        Notes
+        -------
+        in this case, I pre-calculated the differential of the model because the tow-wheeled model is not difficult to calculate the gradient.
+        If you dont or cannot do that, you can use the numerical differentiation.
+        However, sometimes the the numerical differentiation affect the accuracy of calculations.
+        """
 
         A = np.zeros((self.STATE_SIZE, self.STATE_SIZE))
         A_ideal = np.zeros((self.STATE_SIZE, self.STATE_SIZE))
@@ -169,6 +214,8 @@ class iLQRController():
         B = np.zeros((self.STATE_SIZE, self.INPUT_SIZE))
         B_ideal = np.zeros((self.STATE_SIZE, self.INPUT_SIZE))
 
+        # if you want to use the numerical differentiation, please comment out this code
+        """ 
         eps = 1e-4 # finite differences epsilon
 
         for ii in range(self.STATE_SIZE):
@@ -180,10 +227,13 @@ class iLQRController():
             dec_x[ii] -= eps
             state_dec,_ = self.plant_dynamics(dec_x, u.copy())
             A[:, ii] = (state_inc - state_dec) / (2 * eps)
+        """
 
         A_ideal[0, 2] = -np.sin(x[2]) * u[0]
         A_ideal[1, 2] = np.cos(x[2]) * u[0]
         
+        # if you want to use the numerical differentiation, please comment out this code
+        """
         for ii in range(self.INPUT_SIZE):
             # calculate partial differential w.r.t. u
             inc_u = u.copy()
@@ -193,8 +243,8 @@ class iLQRController():
             dec_u[ii] -= eps
             state_dec,_ = self.plant_dynamics(x.copy(), dec_u)
             B[:, ii] = (state_inc - state_dec) / (2 * eps)
+        """
 
-        # calc by hand
         B_ideal[0, 0] = np.cos(x[2])
         B_ideal[1, 0] = np.sin(x[2])
         B_ideal[2, 1] = 1.
@@ -259,72 +309,43 @@ class iLQRController():
 
                 sim_new_trajectory = False
 
-            # optimize things! 
-            # initialize Vs with final state cost and set up k, K 
             V = l[-1].copy() # value function
             V_x = l_x[-1].copy() # dV / dx
             V_xx = l_xx[-1].copy() # d^2 V / dx^2
             k = np.zeros((tN, self.INPUT_SIZE)) # feedforward modification
             K = np.zeros((tN, self.INPUT_SIZE, self.STATE_SIZE)) # feedback gain
 
-            # NOTE: they use V' to denote the value at the next timestep, 
-            # they have this redundant in their notation making it a 
-            # function of f(x + dx, u + du) and using the ', but it makes for 
-            # convenient shorthand when you drop function dependencies
-
             # work backwards to solve for V, Q, k, and K
             for t in range(self.tN-2, -1, -1):
-
-                # NOTE: we're working backwards, so V_x = V_x[t+1] = V'_x
-
-                # 4a) Q_x = l_x + np.dot(f_x^T, V'_x)
                 Q_x = l_x[t] + np.dot(f_x[t].T, V_x) 
-                # 4b) Q_u = l_u + np.dot(f_u^T, V'_x)
                 Q_u = l_u[t] + np.dot(f_u[t].T, V_x)
 
-                # NOTE: last term for Q_xx, Q_uu, and Q_ux is vector / tensor product
-                # but also note f_xx = f_uu = f_ux = 0 so they're all 0 anyways.
-                
-                # 4c) Q_xx = l_xx + np.dot(f_x^T, np.dot(V'_xx, f_x)) + np.einsum(V'_x, f_xx)
                 Q_xx = l_xx[t] + np.dot(f_x[t].T, np.dot(V_xx, f_x[t])) 
-                # 4d) Q_ux = l_ux + np.dot(f_u^T, np.dot(V'_xx, f_x)) + np.einsum(V'_x, f_ux)
                 Q_ux = l_ux[t] + np.dot(f_u[t].T, np.dot(V_xx, f_x[t]))
-                # 4e) Q_uu = l_uu + np.dot(f_u^T, np.dot(V'_xx, f_u)) + np.einsum(V'_x, f_uu)
                 Q_uu = l_uu[t] + np.dot(f_u[t].T, np.dot(V_xx, f_u[t]))
 
-                # Calculate Q_uu^-1 with regularization term set by 
-                # Levenberg-Marquardt heuristic (at end of this loop)
                 Q_uu_evals, Q_uu_evecs = np.linalg.eig(Q_uu)
                 Q_uu_evals[Q_uu_evals < 0] = 0.0
                 Q_uu_evals += lamb
                 Q_uu_inv = np.dot(Q_uu_evecs, np.dot(np.diag(1.0/Q_uu_evals), Q_uu_evecs.T))
 
-                # 5b) k = -np.dot(Q_uu^-1, Q_u)
                 k[t] = -np.dot(Q_uu_inv, Q_u)
-                # 5b) K = -np.dot(Q_uu^-1, Q_ux)
                 K[t] = -np.dot(Q_uu_inv, Q_ux)
 
-                # 6a) DV = -.5 np.dot(k^T, np.dot(Q_uu, k))
-                # 6b) V_x = Q_x - np.dot(K^T, np.dot(Q_uu, k))
                 V_x = Q_x - np.dot(K[t].T, np.dot(Q_uu, k[t]))
-                # 6c) V_xx = Q_xx - np.dot(-K^T, np.dot(Q_uu, K))
                 V_xx = Q_xx - np.dot(K[t].T, np.dot(Q_uu, K[t]))
 
             U_new = np.zeros((tN, self.INPUT_SIZE))
-            # calculate the optimal change to the control trajectory
-            x_new = x0.copy() # 7a)
+            x_new = x0.copy()
             for t in range(tN - 1): 
                 # use feedforward (k) and feedback (K) gain matrices 
                 # calculated from our value function approximation
-                # to take a stab at the optimal control signal
-                U_new[t] = U[t] + k[t] + np.dot(K[t], x_new - X[t]) # 7b)
-                # given this u, find our next state
-                _,x_new = self.plant_dynamics(x_new, U_new[t]) # 7c)
+                U_new[t] = U[t] + k[t] + np.dot(K[t], x_new - X[t])
+                _,x_new = self.plant_dynamics(x_new, U_new[t])
 
             # evaluate the new trajectory 
             X_new, cost_new = self.simulate(x0, U_new)
 
-            # Levenberg-Marquardt heuristic
             if cost_new < cost: 
                 # decrease lambda (get closer to Newton's method)
                 lamb /= self.lamb_factor
@@ -336,8 +357,6 @@ class iLQRController():
 
                 sim_new_trajectory = True # do another rollout
 
-                # print("iteration = %d; Cost = %.4f;"%(ii, costnew) + 
-                #         " logLambda = %.1f"%np.log(lamb))
                 # check to see if update is small enough to exit
                 if ii > 0 and ((abs(oldcost-cost)/cost) < self.eps_converge):
                     print("Converged at iteration = %d; Cost = %.4f;"%(ii,cost_new) + 
@@ -360,11 +379,20 @@ class iLQRController():
         """ simulate a single time step of the plant, from 
         initial state x and applying control signal u
 
-        x np.array: the state of the system
-        u np.array: the control signal
+        Parameters
+        --------------
+        x : numpy.ndarray, shape(STATE_SIZE, )
+            the state of the system
+        u : numpy.ndarray, shape(INPUT_SIZE, )
+            the control signal
+        
+        Returns
+        -----------
+        xdot : numpy.ndarray, shape(STATE_SIZE, )
+            the gradient of x
+        x_next : numpy.ndarray, shape(STATE_SIZE, )
+            next state of x
         """ 
-
-        # set the arm position to x
         self.simulator.initialize_state(x)
 
         # apply the control signal
@@ -387,9 +415,21 @@ class iLQRController():
         """ do a rollout of the system, starting at x0 and 
         applying the control sequence U
 
-        x0 np.array: the initial state of the system
-        U np.array: the control sequence to apply
+        Parameters
+        ----------
+        x0 : numpy.ndarray, shape(STATE_SIZE, )
+            the initial state of the system
+        U : numpy.ndarray, shape(tN, INPUT_SIZE)
+            the control sequence to apply
+        
+        Returns
+        ---------
+        X : numpy.ndarray, shape(tN, STATE_SIZE)
+            the state sequence
+        cost : float
+            cost
         """ 
+        
         tN = U.shape[0]
         X = np.zeros((tN, self.STATE_SIZE))
         X[0] = x0

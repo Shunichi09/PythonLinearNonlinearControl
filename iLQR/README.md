@@ -11,23 +11,33 @@ To solve the problem, we should apply the control methods which can treat the no
 
 <a href="https://www.codecogs.com/eqnedit.php?latex=\frac{d}{dt}&space;\boldsymbol{X}=&space;\frac{d}{dt}&space;\begin{bmatrix}&space;x&space;\\&space;y&space;\\&space;\theta&space;\end{bmatrix}&space;=&space;\begin{bmatrix}&space;\cos(\theta)&space;&&space;0&space;\\&space;\sin(\theta)&space;&&space;0&space;\\&space;0&space;&&space;1&space;\\&space;\end{bmatrix}&space;\begin{bmatrix}&space;u_v&space;\\&space;u_\omega&space;\\&space;\end{bmatrix}&space;=&space;\boldsymbol{B}\boldsymbol{U}" target="_blank"><img src="https://latex.codecogs.com/gif.latex?\frac{d}{dt}&space;\boldsymbol{X}=&space;\frac{d}{dt}&space;\begin{bmatrix}&space;x&space;\\&space;y&space;\\&space;\theta&space;\end{bmatrix}&space;=&space;\begin{bmatrix}&space;\cos(\theta)&space;&&space;0&space;\\&space;\sin(\theta)&space;&&space;0&space;\\&space;0&space;&&space;1&space;\\&space;\end{bmatrix}&space;\begin{bmatrix}&space;u_v&space;\\&space;u_\omega&space;\\&space;\end{bmatrix}&space;=&space;\boldsymbol{B}\boldsymbol{U}" title="\frac{d}{dt} \boldsymbol{X}= \frac{d}{dt} \begin{bmatrix} x \\ y \\ \theta \end{bmatrix} = \begin{bmatrix} \cos(\theta) & 0 \\ \sin(\theta) & 0 \\ 0 & 1 \\ \end{bmatrix} \begin{bmatrix} u_v \\ u_\omega \\ \end{bmatrix} = \boldsymbol{B}\boldsymbol{U}" /></a>
 
-Nonliner Model Predictive Control is one of the famous methods, so I applied the method in the folder of this repository.
-(if you are interested, please look it)
+Nonliner Model Predictive Control is one of the famous methods, so I applied the method to two-wheeled robot which is included in the folder of this repository.
+(if you are interested, please go to nmpc/ folder of this repository)
 
 NMPC is very effecitive method to solve nonlinear optimal control problem but it is a handcraft method.
 This program is about one more other methods to solve the nonlinear optimal control problem.
 
 The method is iterative LQR.
-Iterative LQR is one of the DDP(differential dynamic programming) method.
-Recently, this method is used in IRL(inverse reinforcement learning), such as GPS(guided policy search)
+Iterative LQR is one of the DDP(differential dynamic programming) methods.
+Recently, this method is used in model-based RL(reinforcement learning).
+Although, this method cannot guarantee to obtain the global optimal answer, we could apply any model such as nonliner model or time-varing model even the model that expressed by NN.
+(Still we can only get approximate optimal anwser)
 
 If you want to know more about the iLQR, please look the references.
-The paper and website is great.
+The paper and website are great.
 
 # Usage
 
+## static goal
+
+```
+$ python3 main_static.py
 ```
 
+## dynamic goal
+
+```
+$ python3 main_dynamic.py
 ```
 
 # Expected Results
@@ -35,10 +45,11 @@ The paper and website is great.
 - static goal
 
 
+
+
 - track the goal
 
 
-# Applied other model
 
 
 

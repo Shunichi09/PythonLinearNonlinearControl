@@ -6,11 +6,12 @@ from model import TwoWheeledCar
 from ilqr import iLQRController
 from animation import AnimDrawer
 
+
 def main():
     """
     """
     # iteration parameters
-    NUM_ITERARIONS = 500
+    NUM_ITERATIONS = 500
     dt = 0.01
 
     # make plant
@@ -18,26 +19,22 @@ def main():
     car = TwoWheeledCar(init_x)
 
     # make goal
-    target = np.array([5., 3., 0.])
+    goal_maker = 
 
     # controller
     controller = iLQRController()
 
 
-    for iteration in range(NUM_ITERARIONS):
-        print("iteration num = {} / {}".format(iteration, NUM_ITERARIONS))
+    for iteration in range(NUM_ITERATIONS):
+        print("iteration num = {} / {}".format(iteration, NUM_ITERATIONS))
 
-        if iteration == 0:
-            changed = True
-
-        u = controller.calc_input(car, target, changed=changed)
-
-        car.update_state(u, dt)
+        u = controller.calc_input(car, target)
+        car.update_state(u, dt) # update state
 
     # figures and animation
     history_states = np.array(car.history_xs)
 
-    time_fig = plt.figure()
+    time_fig = plt.figure(figsize=(3, 4))
 
     x_fig = time_fig.add_subplot(311)
     y_fig = time_fig.add_subplot(312)
