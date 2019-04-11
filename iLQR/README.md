@@ -44,13 +44,17 @@ $ python3 main_dynamic.py
 
 - static goal
 
+<img src = https://github.com/Shunichi09/linear_nonlinear_control/blob/demo_gif/iLQR/animation_static.gif width = 70%>
 
+<img src = https://github.com/Shunichi09/linear_nonlinear_control/blob/demo_gif/iLQR/figure_static.png width = 70%>
 
 
 - track the goal
 
 
+<img src = https://github.com/Shunichi09/linear_nonlinear_control/blob/demo_gif/iLQR/animation_dynamic.gif width = 70%>
 
+<img src = https://github.com/Shunichi09/linear_nonlinear_control/blob/demo_gif/iLQR/figure_dynamic.png width = 70%>
 
 
 # Requirement
