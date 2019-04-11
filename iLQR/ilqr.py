@@ -127,8 +127,8 @@ class iLQRController():
         """
 
         # total cost
-        R_11 = 0.01 # terminal u_v cost weight
-        R_22 = 0.01 # terminal u_th cost weight
+        R_11 = 1e-4 # terminal u_v cost weight
+        R_22 = 1e-4 # terminal u_th cost weight
 
         l = np.dot(us.T, np.dot(np.diag([R_11, R_22]), us))
 

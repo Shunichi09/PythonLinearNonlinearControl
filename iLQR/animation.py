@@ -141,7 +141,10 @@ class AnimDrawer():
         lead_history_states, lead_history_predict_states, traj_ref, history_traj_ref, history_angle_ref
         """
         self.car_history_state = objects[0]
-        self.traget = objects[1]
+        self.target = objects[1]
+
+        self.history_target_x = [self.target[:, 0]]
+        self.history_target_y = [self.target[:, 1]] 
         
         self.history_xs = [self.car_history_state[:, 0]]
         self.history_ys = [self.car_history_state[:, 1]]
@@ -155,7 +158,7 @@ class AnimDrawer():
         self.car_imgs = []
         self.traj_imgs = []
 
-    def draw_anim(self, interval=50):
+    def draw_anim(self, interval=10):
         """draw the animation and save
 
         Parameteres
@@ -192,8 +195,8 @@ class AnimDrawer():
         self.axis.set_ylabel(r'$\it{y}$ [m]')
         self.axis.set_aspect('equal', adjustable='box')
 
-        LOW_MARGIN = 5
-        HIGH_MARGIN = 5
+        LOW_MARGIN = 2
+        HIGH_MARGIN = 2
 
         self.axis.set_xlim(np.min(self.history_xs) - LOW_MARGIN, np.max(self.history_xs) + HIGH_MARGIN)
         self.axis.set_ylim(np.min(self.history_ys) - LOW_MARGIN, np.max(self.history_ys) + HIGH_MARGIN)
@@ -288,7 +291,7 @@ class AnimDrawer():
         self.traj_imgs[0].set_data(self.history_xs[0][:i], self.history_ys[0][:i])
 
         # goal
-        self.traj_imgs[-1].set_data(self.traget[0], self.traget[1])
+        self.traj_imgs[-1].set_data(self.history_target_x[0][i-1], self.history_target_y[0][i-1])
 
         # traj_ref
-        # self.traj_imgs[2].set_data(self.history_traj_ref[i][0, :], self.history_traj_ref[i][1, :])
+        self.traj_imgs[1].set_data(self.history_target_x[0][:i], self.history_target_y[0][:i])
