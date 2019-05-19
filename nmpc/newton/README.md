@@ -27,7 +27,7 @@ coming soon !
 
 - example
 
-![Figure_1.png](https://github.com/Shunichi09/linear_nonlinear_control/blob/demo_gif/nmpc/newton/Figure_1.png width = 70%)
+<img src = https://github.com/Shunichi09/linear_nonlinear_control/blob/demo_gif/nmpc/newton/Figure_1.png width = 70% >
 
 you can confirm that the my method could consider the constraints of input.
 
