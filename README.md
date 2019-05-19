@@ -8,6 +8,7 @@ Now you can see the examples of control theories as following
 
 - **Iterative Linear Quadratic Regulator (iLQR)**
 - **Nonlinear Model Predictive Control (NMPC) with CGMRES**
+- **Nonlinear Model Predictive Control (NMPC) with Newton method**
 - **Linear Model Predictive Control (MPC)**(as generic function such as matlab tool box)
 - **Extended Linear Model Predictive Control for vehicle model**
 

@@ -1,7 +1,8 @@
-# CGMRES method of Nonlinear Model Predictive Control
-This program is about Continuous gmres method for NMPC
-Although usually we have to calculate the partial differential of optimal matrix, it could be really complicated.
-By using CGMRES, we can pass the calculating step and get the optimal input quickly.
+# Newton method of Nonlinear Model Predictive Control
+This program is about NMPC with newton method.
+Usually we have to calculate the partial differential of optimal matrix.
+In this program, in stead of using any paticular methods to calculate the partial differential of optimal matrix, I used numerical differentiation.
+Therefore, I believe that it easy to understand and extend your model.
 
 # Problem Formulation
 
@@ -13,39 +14,26 @@ By using CGMRES, we can pass the calculating step and get the optimal input quic
 
 - evaluation function
 
+To consider the constraints of input u, I introduced dummy input.
+
 <a href="https://www.codecogs.com/eqnedit.php?latex=J&space;=&space;\frac{1}{2}(x_1^2(t&plus;T)&plus;x_2^2(t&plus;T))&plus;\int_{t}^{t&plus;T}\frac{1}{2}(x_1^2&plus;x_2^2&plus;u^2)-0.01vd\tau" target="_blank"><img src="https://latex.codecogs.com/gif.latex?J&space;=&space;\frac{1}{2}(x_1^2(t&plus;T)&plus;x_2^2(t&plus;T))&plus;\int_{t}^{t&plus;T}\frac{1}{2}(x_1^2&plus;x_2^2&plus;u^2)-0.01vd\tau" title="J = \frac{1}{2}(x_1^2(t+T)+x_2^2(t+T))+\int_{t}^{t+T}\frac{1}{2}(x_1^2+x_2^2+u^2)-0.01vd\tau" /></a>
 
 
 - **two wheeled model**
 
-- model
-
-<a href="https://www.codecogs.com/eqnedit.php?latex=\frac{d}{dt}&space;\boldsymbol{X}=&space;\frac{d}{dt}&space;\begin{bmatrix}&space;x&space;\\&space;y&space;\\&space;\theta&space;\end{bmatrix}&space;=&space;\begin{bmatrix}&space;\cos(\theta)&space;&&space;0&space;\\&space;\sin(\theta)&space;&&space;0&space;\\&space;0&space;&&space;1&space;\\&space;\end{bmatrix}&space;\begin{bmatrix}&space;u_v&space;\\&space;u_\omega&space;\\&space;\end{bmatrix}&space;=&space;\boldsymbol{B}\boldsymbol{U}" target="_blank"><img src="https://latex.codecogs.com/gif.latex?\frac{d}{dt}&space;\boldsymbol{X}=&space;\frac{d}{dt}&space;\begin{bmatrix}&space;x&space;\\&space;y&space;\\&space;\theta&space;\end{bmatrix}&space;=&space;\begin{bmatrix}&space;\cos(\theta)&space;&&space;0&space;\\&space;\sin(\theta)&space;&&space;0&space;\\&space;0&space;&&space;1&space;\\&space;\end{bmatrix}&space;\begin{bmatrix}&space;u_v&space;\\&space;u_\omega&space;\\&space;\end{bmatrix}&space;=&space;\boldsymbol{B}\boldsymbol{U}" title="\frac{d}{dt} \boldsymbol{X}= \frac{d}{dt} \begin{bmatrix} x \\ y \\ \theta \end{bmatrix} = \begin{bmatrix} \cos(\theta) & 0 \\ \sin(\theta) & 0 \\ 0 & 1 \\ \end{bmatrix} \begin{bmatrix} u_v \\ u_\omega \\ \end{bmatrix} = \boldsymbol{B}\boldsymbol{U}" /></a>
-
-- evaluation function
-
-<a href="https://www.codecogs.com/eqnedit.php?latex=J&space;=&space;\boldsymbol{X}(t_0&plus;T)^2&space;&plus;&space;\int_{t_0}^{t_0&space;&plus;&space;T}&space;\boldsymbol{U}(t)^2&space;-&space;0.01&space;dummy_{u_v}&space;-&space;dummy_{u_\omega}&space;dt" target="_blank"><img src="https://latex.codecogs.com/gif.latex?J&space;=&space;\boldsymbol{X}(t_0&plus;T)^2&space;&plus;&space;\int_{t_0}^{t_0&space;&plus;&space;T}&space;\boldsymbol{U}(t)^2&space;-&space;0.01&space;dummy_{u_v}&space;-&space;dummy_{u_\omega}&space;dt" title="J = \boldsymbol{X}(t_0+T)^2 + \int_{t_0}^{t_0 + T} \boldsymbol{U}(t)^2 - 0.01 dummy_{u_v} - dummy_{u_\omega} dt" /></a>
-
-
-if you want to see more detail about this methods, you should go https://qiita.com/MENDY/items/4108190a579395053924.
-However, it is written in Japanese
+coming soon !
 
 # Expected Results
 
 - example
 
-![Figure_1.png](https://qiita-image-store.s3.amazonaws.com/0/261584/3347fb3c-3fce-63fe-36d5-8a7bb053531a.png)
+![Figure_1.png]()
+
+you can confirm that the my method could consider the constraints of input.
 
 - two wheeled model
 
-- trajectory
-
-![image.png](https://qiita-image-store.s3.amazonaws.com/0/261584/8e39150d-24ed-af13-51f0-0ca97cb5f5ec.png)
-
-- time history
-
-![Figure_1.png](https://qiita-image-store.s3.amazonaws.com/0/261584/e67794f3-e8ef-5162-ea84-eb6adefd4241.png)
-![Figure_2.png](https://qiita-image-store.s3.amazonaws.com/0/261584/d74fa06d-2eae-5aea-4a33-6c63e284341e.png)
+coming soon !
 
 # Usage
 
@@ -57,9 +45,7 @@ $ python main_example.py
 
 - for two wheeled
 
-```
-$ python main_two_wheeled.py
-```
+coming soon !
 
 # Requirement
 
