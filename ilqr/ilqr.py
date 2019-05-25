@@ -312,14 +312,12 @@ class iLQRController():
                     
                     (l[t], l_x[t], l_xx[t], l_u[t], l_uu[t], l_ux[t]) = self.cost(X[t], U[t])
                     
-                    """ # we consider this part in cost function.
                     l[t] *= self.dt
                     l_x[t] *= self.dt
                     l_xx[t] *= self.dt
                     l_u[t] *= self.dt
                     l_uu[t] *= self.dt
                     l_ux[t] *= self.dt
-                    """
 
                 # and for final state
                 l[-1], l_x[-1], l_xx[-1] = self.cost_final(X[-1])
