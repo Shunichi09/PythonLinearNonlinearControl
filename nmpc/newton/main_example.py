@@ -407,19 +407,13 @@ class NMPCControllerWithNewton():
     """
     Attributes
     ------------
-    zeta : float
-        gain of optimal answer stability
-    tf : float
-        predict time
-    alpha : float
-        gain of predict time
     N : int
         predicte step, discritize value
     threshold : float
-        cgmres's threshold value
-    input_num : int
+        newton's threshold value
+    NUM_INPUT : int
         system input length, this should include dummy u and constraint variables
-    max_iteration : int
+    MAX_ITERATION : int
         decide by the solved matrix size
     simulator : NMPCSimulatorSystem class
     us : list of float
@@ -444,11 +438,10 @@ class NMPCControllerWithNewton():
         None
         """
         # parameters
-        self.tf = 1. # 最終時間
-        self.N = 10 # 分割数
-        self.threshold = 0.0001 # break値
+        self.N = 10 # time step
+        self.threshold = 0.0001 # break
 
-        self.NUM_INPUT = 3 # dummy, 制約条件に対するrawにも合わせた入力の数
+        self.NUM_INPUT = 3 # u with dummy,  and 制約条件に対するrawにも合わせた入力の数
         self.Jacobian_size = self.NUM_INPUT * self.N
 
         # newton parameters
@@ -492,11 +485,6 @@ class NMPCControllerWithNewton():
         
         # Newton method
         for i in range(self.MAX_ITERATION):
-            # check            
-            # print("all_us = {}".format(all_us))
-            # print("newton iteration in {}".format(i))
-            # input()
-
             # calc all state
             x_1s, x_2s, lam_1s, lam_2s = self.simulator.calc_predict_and_adjoint_state(x_1, x_2, self.us, self.N, dt)
             
@@ -504,8 +492,6 @@ class NMPCControllerWithNewton():
             F_hat = self._calc_f(x_1s, x_2s, lam_1s, lam_2s, all_us, self.N, dt)
 
             # judge
-            # print("F_hat = {}".format(F_hat))
-            # print(np.linalg.norm(F_hat))
             if np.linalg.norm(F_hat) < self.threshold:
                 # print("break!!")
                 break
@@ -530,9 +516,6 @@ class NMPCControllerWithNewton():
         x_1s, x_2s, lam_1s, lam_2s = self.simulator.calc_predict_and_adjoint_state(x_1, x_2, self.us, self.N, dt)
 
         F = self._calc_f(x_1s, x_2s, lam_1s, lam_2s, all_us, self.N, dt)
-
-        # print("check val of F = {0}".format(np.linalg.norm(F)))
-        # input()
 
         # for save
         self.history_f.append(np.linalg.norm(F))
@@ -642,6 +625,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-    
