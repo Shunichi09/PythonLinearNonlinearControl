@@ -164,9 +164,9 @@ class iLQRController():
         l_xx : numpy.ndarray, shape(STATE_SIZE, STATE_SIZE) 
             second order differential of stage cost by x
         """
-        Q_11 = 1. # terminal x cost weight
-        Q_22 = 1. # terminal y cost weight
-        Q_33 = 0.01 # terminal theta cost weight
+        Q_11 = 10. # terminal x cost weight
+        Q_22 = 10. # terminal y cost weight
+        Q_33 = 0.1 # terminal theta cost weight
 
         error = self.simulator.xs - self.target
 
@@ -290,19 +290,36 @@ class iLQRController():
                 for t in range(tN-1):
                     # x(t+1) = f(x(t), u(t)) = x(t) + dx(t) * dt
                     # linearized dx(t) = np.dot(A(t), x(t)) + np.dot(B(t), u(t))
-                    # f_x = np.eye + A(t)
-                    # f_u = B(t)
+                    # f_x = (np.eye + A(t)) * dt
+                    # f_u = (B(t)) * dt
+                    # continuous --> discrete
                     A, B = self.finite_differences(X[t], U[t])
                     f_x[t] = np.eye(self.STATE_SIZE) + A * self.dt
                     f_u[t] = B * self.dt
-                
+
+                    """ NOTE: why multiply dt in original program ??  
+                    So the dt multiplication and + I is because we’re actually taking the derivative of the state with respect to the previous state. Which is not
+                    dx = Ax + Bu,
+                    but rather
+                    x(t) = x(t-1) + (Ax(t-1) + Bu(t-1))*dt
+                    And that’s where the identity matrix and dt come from!
+                    So that part’s in the comments of the code, but the *dt on all the cost function stuff is not commented on at all!
+                    So here the dt lets you normalize behaviour for different time steps (assuming you also scale the number of steps in the sequence).
+                    So if you have a time step of .01 or .001 you’re not racking up 10 times as much cost function in the latter case.
+                    And if you run the code with 50 steps in the sequence and dt=.01 and 500 steps in the sequence
+                    and dt=.001 you’ll see that you get the same results, which is not the case at all when you don’t take dt into account in the cost function!
+                    """
+                    
                     (l[t], l_x[t], l_xx[t], l_u[t], l_uu[t], l_ux[t]) = self.cost(X[t], U[t])
+                    
+                    """ # we consider this part in cost function.
                     l[t] *= self.dt
                     l_x[t] *= self.dt
                     l_xx[t] *= self.dt
                     l_u[t] *= self.dt
                     l_uu[t] *= self.dt
                     l_ux[t] *= self.dt
+                    """
 
                 # and for final state
                 l[-1], l_x[-1], l_xx[-1] = self.cost_final(X[-1])
@@ -329,8 +346,8 @@ class iLQRController():
                 Q_uu_evals += lamb
                 Q_uu_inv = np.dot(Q_uu_evecs, np.dot(np.diag(1.0/Q_uu_evals), Q_uu_evecs.T))
 
-                k[t] = -np.dot(Q_uu_inv, Q_u)
-                K[t] = -np.dot(Q_uu_inv, Q_ux)
+                k[t] = -1. * np.dot(Q_uu_inv, Q_u)
+                K[t] = -1. * np.dot(Q_uu_inv, Q_ux)
 
                 V_x = Q_x - np.dot(K[t].T, np.dot(Q_uu, k[t]))
                 V_xx = Q_xx - np.dot(K[t].T, np.dot(Q_uu, K[t]))
