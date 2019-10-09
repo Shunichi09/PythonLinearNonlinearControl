@@ -289,7 +289,7 @@ def main():
     iteration_num = int(simulation_time / dt)
 
     # make simulator with coninuous matrix
-    init_xs_lead = np.array([0., 0., math.pi/6, 0.])
+    init_xs_lead = np.array([0., 0., math.pi/5, 0.])
     lead_car = WheeledSystem(init_states=init_xs_lead)
 
     # make system model
@@ -306,7 +306,7 @@ def main():
 
     # get traj's curvature
     NUM_SKIP = 3
-    MARGIN = 20
+    MARGIN = 50
     angles, curvatures = calc_curvatures(traj_ref[:, index_min + MARGIN:index_min + PREDICT_STEP + 2 * NUM_SKIP + MARGIN], PREDICT_STEP, NUM_SKIP)
 
     # save traj ref
@@ -317,8 +317,8 @@ def main():
     # input()
 
     # evaluation function weight
-    Q = np.diag([1000000., 10., 1.])
-    R = np.diag([0.1])
+    Q = np.diag([1e2, 1., 1e3])
+    R = np.diag([1e2])
 
     # System model update
     V = calc_ideal_vel(traj_ref, dt) # in pratical we should calc from the state
