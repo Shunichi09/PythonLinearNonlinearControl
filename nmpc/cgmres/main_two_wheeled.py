@@ -60,7 +60,7 @@ class TwoWheeledSystem():
             k1[i] = dt * func(self.x_1 + k0[0]/2., self.x_2 + k0[1]/2., self.x_3 + k0[2]/2., u_1, u_2)
         
         for i, func in enumerate(functions):
-            k2[i] = dt * func(self.x_1 + k0[0]/2., self.x_2 + k0[1]/2., self.x_3 + k0[2]/2., u_1, u_2)
+            k2[i] = dt * func(self.x_1 + k1[0]/2., self.x_2 + k1[1]/2., self.x_3 + k1[2]/2., u_1, u_2)
         
         for i, func in enumerate(functions):
             k3[i] =  dt * func(self.x_1 + k2[0], self.x_2 + k2[1], self.x_3 + k2[2], u_1, u_2)

@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+import copy
 
 class SampleSystem():
     """SampleSystem, this is the simulator
@@ -63,8 +64,8 @@ class SampleSystem():
         self.x_2 += (k0[1] + 2. * k1[1] + 2. * k2[1] + k3[1]) / 6.
     
         # save
-        self.history_x_1.append(self.x_1)
-        self.history_x_2.append(self.x_2)      
+        self.history_x_1.append(copy.deepcopy(self.x_1))
+        self.history_x_2.append(copy.deepcopy(self.x_2))
 
     def _func_x_1(self, y_1, y_2, u):
         """
@@ -161,13 +162,17 @@ class NMPCSimulatorSystem():
             predicted x_2s for N steps
         """
         # initial state
-        x_1s = [x_1]
-        x_2s = [x_2]
+        x_1s = np.zeros(N+1)
+        x_2s = np.zeros(N+1)
+
+        # input initial state
+        x_1s[0] = x_1
+        x_2s[0] = x_2
 
         for i in range(N):
             temp_x_1, temp_x_2 = self._predict_state_with_oylar(x_1s[i], x_2s[i], us[i], dt)
-            x_1s.append(temp_x_1)
-            x_2s.append(temp_x_2)
+            x_1s[i+1] = temp_x_1
+            x_2s[i+1] = temp_x_2
 
         return x_1s, x_2s
 
@@ -195,13 +200,17 @@ class NMPCSimulatorSystem():
         """
         # final state
         # final_state_func
-        lam_1s = [x_1s[-1]]
-        lam_2s = [x_2s[-1]]
+        lam_1s = np.zeros(N)
+        lam_2s = np.zeros(N)
+
+        # input final state
+        lam_1s[-1] = x_1s[-1]
+        lam_2s[-1] = x_2s[-1]
 
         for i in range(N-1, 0, -1): 
-            temp_lam_1, temp_lam_2 = self._adjoint_state_with_oylar(x_1s[i], x_2s[i], lam_1s[0] ,lam_2s[0], us[i], dt)
-            lam_1s.insert(0, temp_lam_1)
-            lam_2s.insert(0, temp_lam_2)
+            temp_lam_1, temp_lam_2 = self._adjoint_state_with_oylar(x_1s[i], x_2s[i], lam_1s[i] ,lam_2s[i], us[i], dt)
+            lam_1s[i-1] = temp_lam_1
+            lam_2s[i-1] = temp_lam_2
 
         return lam_1s, lam_2s
 
@@ -357,50 +366,61 @@ class NMPCSimulatorSystem():
         return y_dot
 
 
-def calc_numerical_gradient(f, x, shape):
+def calc_numerical_gradient(forward_prop, grad_f, all_us, shape, input_size):
     """
     Parameters
     ------------
-    f : function
-        forward function of NN
-    x : numpy.ndarray
-        input
+    forward_prop : function
+        forward prop
+    grad_f : function
+        gradient function
+    all_us : numpy.ndarray, shape(pred_len, input_size*3)
+        all inputs including with dummy input
     shape : tuple
-        jacobian shape
+        shape of Jacobian
+    input_size : int
+        input size of system
     
     Returns
     ---------
     grad : numpy.ndarray, shape is the same as shape
         results of numercial gradient of the input
+    
     References
     -----------
     - oreilly japan 0 から作るdeeplearning
     https://github.com/oreilly-japan/deep-learning-from-scratch/blob/master/common/gradient.py
     """
-    # check condition
-    if not callable(f):
-        raise TypeError("f should be callable")
-
-    if not (isinstance(x, list) or isinstance(x, np.ndarray)):
-        raise TypeError("x should be array-like")
-
     h = 1e-3 # 0.01
     grad = np.zeros(shape)
+    grad_idx = 0
 
-    for idx in range(x.size):
-        # save
-        tmp_val = x[idx]
+    it = np.nditer(all_us, flags=['multi_index'], op_flags=['readwrite'])
+    while not it.finished:
+        # get index
+        idx = it.multi_index
+        # save and return
+        tmp_val = all_us[idx]
 
-        x[idx] = float(tmp_val) + h
-        fxh1 = f(x) # f(x+h)
-        
-        x[idx] = float(tmp_val) - h 
-        fxh2 = f(x) # f(x-h)
+        # 差分を取る
+        # 上側の差分
+        all_us[idx] = float(tmp_val) + h
+        us = all_us[:, :input_size]
+        x_1s, x_2s, lam_1s, lam_2s = forward_prop(us)  # forward
+        fuh1 = grad_f(x_1s, x_2s, lam_1s, lam_2s, all_us)
 
-        grad[:, idx] = (fxh1 - fxh2) / (2*h)
+        # 下側の差分
+        all_us[idx] = float(tmp_val) - h
+        us = all_us[:, :input_size]
+        x_1s, x_2s, lam_1s, lam_2s = forward_prop(us)  # forward
+        fuh2 = grad_f(x_1s, x_2s, lam_1s, lam_2s, all_us)
+
+        grad[:, grad_idx] = ((fuh1 - fuh2) / (2.*h)).flatten()  # to flat でgradに代入できるように
         
-        x[idx] = tmp_val
-        
+        all_us[idx] = tmp_val  
+        it.iternext()
+        grad_idx += 1
+    
     return np.array(grad)
 
 class NMPCControllerWithNewton():
@@ -441,8 +461,9 @@ class NMPCControllerWithNewton():
         self.N = 10 # time step
         self.threshold = 0.0001 # break
 
-        self.NUM_INPUT = 3 # u with dummy,  and 制約条件に対するrawにも合わせた入力の数
-        self.Jacobian_size = self.NUM_INPUT * self.N
+        self.NUM_ALL_INPUT = 3 # u with dummy,  and 制約条件に対するrawにも合わせた入力の数
+        self.NUM_INPUT = 1 # u with dummy,  and 制約条件に対するrawにも合わせた入力の数
+        self.Jacobian_size = self.NUM_ALL_INPUT * self.N
 
         # newton parameters
         self.MAX_ITERATION = 100
@@ -451,9 +472,9 @@ class NMPCControllerWithNewton():
         self.simulator = NMPCSimulatorSystem()
 
         # initial
-        self.us = np.zeros(self.N)
-        self.dummy_us = np.ones(self.N) * 0.25
-        self.raws = np.ones(self.N) * 0.01
+        self.us = np.zeros((self.N, self.NUM_INPUT))
+        self.dummy_us = np.ones((self.N, self.NUM_INPUT)) * 0.25
+        self.raws = np.ones((self.N, self.NUM_INPUT)) * 0.01
 
         # for fig
         self.history_u = []
@@ -479,9 +500,8 @@ class NMPCControllerWithNewton():
         # calculating sampling time
         dt = 0.01
 
-        # concat all us, shape (NUM_INPUT, N)
-        all_us = np.stack((self.us, self.dummy_us, self.raws))
-        all_us = all_us.T.flatten() 
+        # concat all us, shape (pred_len, input_size)
+        all_us = np.hstack((self.us, self.dummy_us, self.raws))
         
         # Newton method
         for i in range(self.MAX_ITERATION):
@@ -496,22 +516,30 @@ class NMPCControllerWithNewton():
                 # print("break!!")
                 break
 
-            grad_f = lambda all_us : self._calc_f(x_1s, x_2s, lam_1s, lam_2s, all_us, self.N, dt)           
-            grads = calc_numerical_gradient(grad_f, all_us, (self.Jacobian_size, self.Jacobian_size))
+            grad_f = lambda x_1s, x_2s, lam_1s, lam_2s, all_us : self._calc_f(x_1s, x_2s, lam_1s, lam_2s, all_us, self.N, dt) 
+            forward_prop_f = lambda us : self.simulator.calc_predict_and_adjoint_state(x_1, x_2, us, self.N, dt)          
+            grads = calc_numerical_gradient(forward_prop_f, grad_f, all_us, (self.Jacobian_size, self.Jacobian_size), self.NUM_INPUT)
 
             # make jacobian and calc inverse of it
-            # all us
-            all_us = all_us - np.dot(np.linalg.inv(grads), F_hat)
+            # grads += np.eye(self.Jacobian_size) * 1e-8
+            try:
+                all_us = all_us.reshape(-1, 1) - np.dot(np.linalg.inv(grads), F_hat.reshape(-1, 1))
+            except np.linalg.LinAlgError:
+                print("Warning : singular matrix!!")
+                grads += np.eye(self.Jacobian_size) * 1e-10  # add noise
+                all_us = all_us.reshape(-1, 1) - np.dot(np.linalg.inv(grads), F_hat.reshape(-1, 1))
+
+            all_us = all_us.reshape(self.N, self.NUM_ALL_INPUT)
 
             # update
-            self.us = all_us[::self.NUM_INPUT]
-            self.dummy_us = all_us[1::self.NUM_INPUT]
-            self.raws = all_us[2::self.NUM_INPUT]
+            self.us = all_us[:, :self.NUM_INPUT]
+            self.dummy_us = all_us[:, self.NUM_INPUT:2*self.NUM_INPUT]
+            self.raws = all_us[:, 2*self.NUM_INPUT:]
 
         # final insert
-        self.us = all_us[::self.NUM_INPUT]
-        self.dummy_us = all_us[1::self.NUM_INPUT]
-        self.raws = all_us[2::self.NUM_INPUT]
+        self.us = all_us[:, :self.NUM_INPUT]
+        self.dummy_us = all_us[:, self.NUM_INPUT:2*self.NUM_INPUT]
+        self.raws = all_us[:, 2*self.NUM_INPUT:]
 
         x_1s, x_2s, lam_1s, lam_2s = self.simulator.calc_predict_and_adjoint_state(x_1, x_2, self.us, self.N, dt)
 
@@ -548,16 +576,18 @@ class NMPCControllerWithNewton():
         dt : float
             sampling time of system
         """
-        F = []
+        F = np.zeros((N, self.NUM_INPUT*3))
 
-        us = all_us[::self.NUM_INPUT]
-        dummy_us = all_us[1::self.NUM_INPUT]
-        raws = all_us[2::self.NUM_INPUT]
+        us = all_us[:, :self.NUM_INPUT].flatten()
+        dummy_us = all_us[:, self.NUM_INPUT:2*self.NUM_INPUT].flatten()
+        raws = all_us[:, 2*self.NUM_INPUT:].flatten()
 
         for i in range(N):
-            F.append(0.5 * us[i] + lam_2s[i] + 2. * raws[i] * us[i])
-            F.append(-0.01 + 2. * raws[i] * dummy_us[i])
-            F.append(us[i]**2 + dummy_us[i]**2 - 0.5**2)
+            F_u = 0.5 * us[i] + lam_2s[i] + 2. * raws[i] * us[i]
+            F_dummy = -0.01 + 2. * raws[i] * dummy_us[i]
+            F_raw = us[i]**2 + dummy_us[i]**2 - 0.5**2
+
+            F[i] = np.array([F_u, F_dummy, F_raw])
         
         return np.array(F)
 
