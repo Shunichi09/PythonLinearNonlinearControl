@@ -23,3 +23,13 @@ you can see the usage in each folder
 
 # License
 MIT
+
+# Citation
+
+```
+@Misc{pythonlinearnonlinearControl,
+author = {Shunichi Sekiguchi},
+title = {pythonlinearnonlinearControl},
+note = "\url{https://github.com/Shunichi09/linear_nonlinear_control}",
+}
+```
