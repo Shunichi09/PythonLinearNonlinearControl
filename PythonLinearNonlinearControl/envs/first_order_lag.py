@@ -70,13 +70,13 @@ class FirstOrderLagEnv(Env):
             self.curr_x = init_x
 
         # goal
-        self.goal_state = np.array([0., 0, -2., 3.])
+        self.g_x = np.array([0., 0, -2., 3.])
         
         # clear memory
         self.history_x = []
         self.history_g_x = []
 
-        return self.curr_x, {"goal_state": self.goal_state}
+        return self.curr_x, {"goal_state": self.g_x}
 
     def step(self, u):
         """
@@ -99,15 +99,17 @@ class FirstOrderLagEnv(Env):
         # cost
         cost = 0
         cost = np.sum(u**2)
-        cost += np.sum((self.curr_x-g_x)**2)
+        cost += np.sum((self.curr_x - self.g_x)**2)
 
         # save history
         self.history_x.append(next_x.flatten())
-        self.history_g_x.append(self.goal_state.flatten())
+        self.history_g_x.append(self.g_x.flatten())
         
         # update
         self.curr_x = next_x.flatten()
         # update costs
         self.step_count += 1
 
-        return next_x.flatten(), cost, self.step_count > self.config["max_step"], {"goal_state" : self.goal_state}
+        return next_x.flatten(), cost, \
+               self.step_count > self.config["max_step"], \
+               {"goal_state" : self.g_x}

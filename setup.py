@@ -1,14 +1,14 @@
 from setuptools import find_packages
 from setuptools import setup
 
-install_requires = ['numpy', 'matplotlib', 'cvxopt']
+install_requires = ['numpy', 'matplotlib', 'cvxopt', 'scipy']
 tests_require = ['pytest']
 setup_requires = ["pytest-runner"]
 
 setup(
     name='PythonLinearNonlinearControl',
     version='2.0',
-    description='Implementing linear and non-linear control method in python',
+    description='Implementing linear and nonlinear control method in python',
     author='Shunichi Sekiguchi',
     author_email='quick1st97of@gmail.com',
     install_requires=install_requires,

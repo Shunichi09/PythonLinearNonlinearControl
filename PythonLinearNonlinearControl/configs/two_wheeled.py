@@ -1,25 +1,21 @@
 import numpy as np
 
-class FirstOrderLagConfigModule():
+class TwoWheeledConfigModule():
     # parameters
-    ENV_NAME = "FirstOrderLag-v0"
-    TYPE = "Linear"
+    ENV_NAME = "TwoWheeled-v0"
+    TYPE = "Nonlinear"
     TASK_HORIZON = 1000
     PRED_LEN = 10
-    STATE_SIZE = 4
+    STATE_SIZE = 3
     INPUT_SIZE = 2
-    DT = 0.05
+    DT = 0.01
     # cost parameters
     R = np.eye(INPUT_SIZE)
     Q = np.eye(STATE_SIZE)
     Sf = np.eye(STATE_SIZE)
     # bounds
-    INPUT_LOWER_BOUND = np.array([-0.5, -0.5])
-    INPUT_UPPER_BOUND = np.array([0.5, 0.5])
-    # DT_INPUT_LOWER_BOUND = np.array([-0.5 * DT, -0.5 * DT])
-    # DT_INPUT_UPPER_BOUND = np.array([0.25 * DT, 0.25 * DT])
-    DT_INPUT_LOWER_BOUND = None
-    DT_INPUT_UPPER_BOUND = None
+    INPUT_LOWER_BOUND = np.array([-1.5, 3.14])
+    INPUT_UPPER_BOUND = np.array([1.5, 3.14])
 
     def __init__(self):
         """ 
@@ -45,9 +41,9 @@ class FirstOrderLagConfigModule():
             },
            "iLQR":{
            },
-           "cgmres-NMPC":{
+           "NMPC-CGMRES":{
            },
-           "newton-NMPC":{
+           "NMPC-Newton":{
            },
         }   
 
@@ -60,7 +56,7 @@ class FirstOrderLagConfigModule():
         Returns:
             cost (numpy.ndarray): cost of input, none or shape(pop_size, )
         """
-        return (u**2) * np.diag(FirstOrderLagConfigModule.R)
+        return (u**2) * np.diag(TwoWheeledConfigModule.R) * 0.1
     
     @staticmethod
     def state_cost_fn(x, g_x):
@@ -73,7 +69,7 @@ class FirstOrderLagConfigModule():
         Returns:
             cost (numpy.ndarray): cost of state, none or shape(pop_size, )
         """
-        return ((x - g_x)**2) * np.diag(FirstOrderLagConfigModule.Q)
+        return ((x - g_x)**2) * np.diag(TwoWheeledConfigModule.Q)
 
     @staticmethod
     def terminal_state_cost_fn(terminal_x, terminal_g_x):
@@ -87,4 +83,4 @@ class FirstOrderLagConfigModule():
             cost (numpy.ndarray): cost of state, none or shape(pop_size, )
         """
         return ((terminal_x - terminal_g_x)**2) \
-                * np.diag(FirstOrderLagConfigModule.Sf)
+                * np.diag(TwoWheeledConfigModule.Sf)
