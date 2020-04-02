@@ -115,6 +115,10 @@ def main():
     Ad = sysd.A
     Bd = sysd.B
 
+    print(Ad)
+    print(Bd)
+    input()
+
     # evaluation function weight
     Q = np.diag([1., 1., 1., 1.])
     R = np.diag([1., 1.])
