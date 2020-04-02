@@ -6,7 +6,7 @@
 
 PythonLinearNonLinearControl is a library implementing the linear and nonlinear control theories in python.
 
-![Concepts](assets/concepts.png)
+<img src="assets/concept.png" width="500">
 
 # Algorithms
 
@@ -28,16 +28,16 @@ Following algorithms are implemented in PythonLinearNonlinearControl
 
 - [Linear Model Predictive Control (MPC)](http://www2.eng.cam.ac.uk/~jmm1/mpcbook/mpcbook.html)
   - Ref: Maciejowski, J. M. (2002). Predictive control: with constraints.
-    - [script]()
+    - [script](PythonLinearNonlinearControl/controllers/mpc.py)
 - [Cross Entropy Method (CEM)](https://arxiv.org/abs/1805.12114)
   - Ref: Chua, K., Calandra, R., McAllister, R., & Levine, S. (2018). Deep reinforcement learning in a handful of trials using probabilistic dynamics models. In Advances in Neural Information Processing Systems (pp. 4754-4765)
-    - [script]()
+    - [script](PythonLinearNonlinearControl/controllers/cem.py)
 - [Model Preidictive Path Integral Control (MPPI)](https://arxiv.org/abs/1909.11652)
   - Ref: Nagabandi, A., Konoglie, K., Levine, S., & Kumar, V. (2019). Deep Dynamics Models for Learning Dexterous Manipulation. arXiv preprint arXiv:1909.11652.
-    - [script]()
+    - [script](PythonLinearNonlinearControl/controllers/mppi.py)
 - [Random Shooting Method (Random)](https://arxiv.org/abs/1805.12114)
   - Ref: Chua, K., Calandra, R., McAllister, R., & Levine, S. (2018). Deep reinforcement learning in a handful of trials using probabilistic dynamics models. In Advances in Neural Information Processing Systems (pp. 4754-4765)
-    - [script]()
+    - [script](PythonLinearNonlinearControl/controllers/random.py)
 - [Iterative LQR (iLQR)](https://ieeexplore.ieee.org/document/6386025)
   - Ref: Tassa, Y., Erez, T., & Todorov, E. (2012, October). Synthesis and stabilization of complex behaviors through online trajectory optimization. In 2012 IEEE/RSJ International Conference on Intelligent Robots and Systems (pp. 4906-4913). IEEE. and [Study Wolf](https://github.com/studywolf/control)
     - [script (Coming soon)]()
@@ -93,7 +93,7 @@ pip install -e .
 You can run the experiments as follows:
 
 ```
-python scripts/simple_run.py --model "first-order_lag" --controller "CEM"
+python scripts/simple_run.py --model first-order_lag --controller CEM
 ```
 
 **figures and animations are saved in the ./result folder.**
@@ -103,7 +103,7 @@ python scripts/simple_run.py --model "first-order_lag" --controller "CEM"
 When we design control systems, we should have **Model**, **Planner**, **Controller** and **Runner** as shown in the figure.
 It should be noted that **Model** and **Environment** are different. As mentioned before, we the algorithms for linear model could be applied to nonlinear enviroments if you have linealized model of nonlinear environments. In addition, you can use Neural Network or any non-linear functions to the model, although this library can not deal with it now.
 
-![Concepts](assets/concepts.png)
+<img src="assets/concept.png" width="500">
 
 ## Model
 
