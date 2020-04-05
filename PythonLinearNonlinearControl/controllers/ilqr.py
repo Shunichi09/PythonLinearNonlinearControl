@@ -41,7 +41,8 @@ class iLQR(Controller):
 
         # controller parameters
         self.max_iter = config.opt_config["iLQR"]["max_iter"]
-        self.mu = config.opt_config["iLQR"]["mu"]
+        self.init_mu = config.opt_config["iLQR"]["init_mu"]
+        self.mu = self.init_mu
         self.mu_min = config.opt_config["iLQR"]["mu_min"]
         self.mu_max = config.opt_config["iLQR"]["mu_max"]
         self.init_delta = config.opt_config["iLQR"]["init_delta"]
@@ -81,6 +82,8 @@ class iLQR(Controller):
         sol = self.prev_sol.copy()
         converged_sol = False
         update_sol = True
+        self.mu = self.init_mu
+        self.delta = self.init_delta
 
         # line search param
         alphas = 1.1**(-np.arange(10)**2)

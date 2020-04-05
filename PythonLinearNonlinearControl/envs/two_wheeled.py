@@ -56,7 +56,7 @@ class TwoWheeledConstEnv(Env):
             self.curr_x = init_x
 
         # goal
-        self.g_x = np.array([5., 5., 0.])
+        self.g_x = np.array([2.5, 2.5, 0.])
         
         # clear memory
         self.history_x = []

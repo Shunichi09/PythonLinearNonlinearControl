@@ -18,4 +18,4 @@ def make_controller(args, config, model):
     elif args.controller_type == "iLQR":
         return iLQR(config, model)
     elif args.controller_type == "DDP":
-        return iLQR(config, model)
+        return DDP(config, model)
