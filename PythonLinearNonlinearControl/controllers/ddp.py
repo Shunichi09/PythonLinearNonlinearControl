@@ -8,8 +8,8 @@ from ..envs.cost import calc_cost
 
 logger = getLogger(__name__)
 
-class iLQR(Controller):
-    """ iterative Liner Quadratique Regulator
+class DDP(Controller):
+    """ Differential Dynamic Programming
 
     Ref:
         Tassa, Y., Erez, T., & Todorov, E. (2012). . In 2012 IEEE/RSJ International Conference on
@@ -19,7 +19,7 @@ class iLQR(Controller):
     def __init__(self, config, model):
         """
         """
-        super(iLQR, self).__init__(config, model)
+        super(DDP, self).__init__(config, model)
             
         if config.TYPE != "Nonlinear":
             raise ValueError("{} could be not applied to \
@@ -40,13 +40,13 @@ class iLQR(Controller):
             config.hessian_cost_fn_with_input_state
 
         # controller parameters
-        self.max_iter = config.opt_config["iLQR"]["max_iter"]
-        self.mu = config.opt_config["iLQR"]["mu"]
-        self.mu_min = config.opt_config["iLQR"]["mu_min"]
-        self.mu_max = config.opt_config["iLQR"]["mu_max"]
-        self.init_delta = config.opt_config["iLQR"]["init_delta"]
+        self.max_iter = config.opt_config["DDP"]["max_iter"]
+        self.mu = config.opt_config["DDP"]["mu"]
+        self.mu_min = config.opt_config["DDP"]["mu_min"]
+        self.mu_max = config.opt_config["DDP"]["mu_max"]
+        self.init_delta = config.opt_config["DDP"]["init_delta"]
         self.delta = self.init_delta
-        self.threshold = config.opt_config["iLQR"]["threshold"]
+        self.threshold = config.opt_config["DDP"]["threshold"]
 
         # general parameters
         self.pred_len = config.PRED_LEN
@@ -90,13 +90,15 @@ class iLQR(Controller):
 
             # forward    
             if update_sol == True:
-                pred_xs, cost, f_x, f_u, l_x, l_xx, l_u, l_uu, l_ux = \
+                pred_xs, cost, f_x, f_u, f_xx, f_ux, f_uu,\
+                l_x, l_xx, l_u, l_uu, l_ux = \
                     self.forward(curr_x, g_xs, sol)
                 update_sol = False
             
             try:
                 # backward
-                k, K = self.backward(f_x, f_u, l_x, l_xx, l_u, l_uu, l_ux)
+                k, K = self.backward(f_x, f_u, f_xx, f_ux, f_uu, \
+                                     l_x, l_xx, l_u, l_uu, l_ux)
 
                 # line search
                 for alpha in alphas:
@@ -199,6 +201,12 @@ class iLQR(Controller):
                 shape(pred_len, state_size, state_size)
             f_u (numpy.ndarray): gradient of model with respecto to input,
                 shape(pred_len, state_size, input_size)
+            f_xx (numpy.ndarray): gradient of model with respecto to state,
+                shape(pred_len+1, state_size, state_size, state_size)
+            f_ux (numpy.ndarray): gradient of model with respecto to input,
+                shape(pred_len, state_size, input_size, state_size)
+            f_uu (numpy.ndarray): gradient of model with respecto to input,
+                shape(pred_len, state_size, input_size, input_size)
             l_x (numpy.ndarray): gradient of cost with respecto to state,
                 shape(pred_len+1, state_size)
             l_u (numpy.ndarray): gradient of cost with respecto to input,
@@ -220,12 +228,17 @@ class iLQR(Controller):
         # calc gradinet in batch
         f_x = self.model.calc_f_x(pred_xs[:-1], sol, self.dt) 
         f_u = self.model.calc_f_u(pred_xs[:-1], sol, self.dt)
+        # calc hessian in batch
+        f_xx = self.model.calc_f_xx(pred_xs[:-1], sol, self.dt)
+        f_ux = self.model.calc_f_ux(pred_xs[:-1], sol, self.dt)
+        f_uu = self.model.calc_f_uu(pred_xs[:-1], sol, self.dt)
 
         # gradint of costs
         l_x, l_xx, l_u, l_uu, l_ux = \
             self._calc_gradient_hessian_cost(pred_xs, g_xs, sol)
         
-        return pred_xs, cost, f_x, f_u, l_x, l_xx, l_u, l_uu, l_ux
+        return pred_xs, cost, f_x, f_u, f_xx, f_ux, f_uu, \
+            l_x, l_xx, l_u, l_uu, l_ux
 
     def _calc_gradient_hessian_cost(self, pred_xs, g_x, sol):
         """ calculate gradient and hessian of model and cost fn
@@ -276,13 +289,19 @@ class iLQR(Controller):
 
         return l_x, l_xx, l_u, l_uu, l_ux
 
-    def backward(self, f_x, f_u, l_x, l_xx, l_u, l_uu, l_ux):
+    def backward(self, f_x, f_u, f_xx, f_ux, f_uu, l_x, l_xx, l_u, l_uu, l_ux):
         """ backward step of iLQR
         Args:
             f_x (numpy.ndarray): gradient of model with respecto to state,
                 shape(pred_len+1, state_size, state_size)
             f_u (numpy.ndarray): gradient of model with respecto to input,
                 shape(pred_len, state_size, input_size)
+            f_xx (numpy.ndarray): gradient of model with respecto to state,
+                shape(pred_len+1, state_size, state_size, state_size)
+            f_ux (numpy.ndarray): gradient of model with respecto to input,
+                shape(pred_len, state_size, input_size, state_size)
+            f_uu (numpy.ndarray): gradient of model with respecto to input,
+                shape(pred_len, state_size, input_size, input_size)
             l_x (numpy.ndarray): gradient of cost with respecto to state,
                 shape(pred_len+1, state_size)
             l_u (numpy.ndarray): gradient of cost with respecto to input,
@@ -309,7 +328,9 @@ class iLQR(Controller):
 
         for t in range(self.pred_len-1, -1, -1):
             # get Q val
-            Q_x, Q_u, Q_xx, Q_ux, Q_uu = self._Q(f_x[t], f_u[t], l_x[t],
+            Q_x, Q_u, Q_xx, Q_ux, Q_uu = self._Q(f_x[t], f_u[t],
+                                                 f_xx[t], f_ux[t], f_uu[t],
+                                                 l_x[t],
                                                  l_u[t], l_xx[t], l_ux[t],
                                                  l_uu[t], V_x, V_xx)
             # calc gain
@@ -325,13 +346,20 @@ class iLQR(Controller):
 
         return k, K
 
-    def _Q(self, f_x, f_u, l_x, l_u, l_xx, l_ux, l_uu, V_x, V_xx):
+    def _Q(self, f_x, f_u, f_xx, f_ux, f_uu,
+           l_x, l_u, l_xx, l_ux, l_uu, V_x, V_xx):
         """Computes second order expansion.
         Args:
             f_x (numpy.ndarray): gradient of model with respecto to state,
                 shape(state_size, state_size)
             f_u (numpy.ndarray): gradient of model with respecto to input,
                 shape(state_size, input_size)
+            f_xx (numpy.ndarray): gradient of model with respecto to state,
+                shape(state_size, state_size, state_size)
+            f_ux (numpy.ndarray): gradient of model with respecto to input,
+                shape(state_size, input_size, state_size)
+            f_uu (numpy.ndarray): gradient of model with respecto to input,
+                shape(state_size, input_size, input_size)
             l_x (numpy.ndarray): gradient of cost with respecto to state,
                 shape(state_size, )
             l_u (numpy.ndarray): gradient of cost with respecto to input,
@@ -366,5 +394,10 @@ class iLQR(Controller):
         reg = self.mu * np.eye(state_size)
         Q_ux = l_ux + np.dot(np.dot(f_u.T, (V_xx + reg)), f_x)
         Q_uu = l_uu + np.dot(np.dot(f_u.T, (V_xx + reg)), f_u)
+
+        # tensor constraction
+        Q_xx += np.tensordot(V_x, f_xx, axes=1)
+        Q_ux += np.tensordot(V_x, f_ux, axes=1)
+        Q_uu += np.tensordot(V_x, f_uu, axes=1)
 
         return Q_x, Q_u, Q_xx, Q_ux, Q_uu

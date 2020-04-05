@@ -43,22 +43,19 @@ class FirstOrderLagConfigModule():
                 "kappa": 0.9,
                 "noise_sigma": 0.5,
             },
-           "iLQR":{
-           },
-           "cgmres-NMPC":{
-           },
-           "newton-NMPC":{
-           },
+           "MPC":{
+           }
         }   
 
     @staticmethod
     def input_cost_fn(u):
         """ input cost functions
         Args:
-            u (numpy.ndarray): input, shape(input_size, )
-                or shape(pop_size, input_size)
+            u (numpy.ndarray): input, shape(pred_len, input_size)
+                or shape(pop_size, pred_len, input_size)
         Returns:
-            cost (numpy.ndarray): cost of input, none or shape(pop_size, )
+            cost (numpy.ndarray): cost of input, shape(pred_len, input_size) or
+                shape(pop_size, pred_len, input_size)
         """
         return (u**2) * np.diag(FirstOrderLagConfigModule.R)
     
@@ -67,11 +64,12 @@ class FirstOrderLagConfigModule():
         """ state cost function
         Args:
             x (numpy.ndarray): state, shape(pred_len, state_size)
-                or shape(pop_size,  pred_len, state_size)
-            g_x (numpy.ndarray): goal state, shape(state_size, )
-                or shape(pop_size, state_size)
+                or shape(pop_size, pred_len, state_size)
+            g_x (numpy.ndarray): goal state, shape(pred_len, state_size)
+                or shape(pop_size, pred_len, state_size)
         Returns:
-            cost (numpy.ndarray): cost of state, none or shape(pop_size, )
+            cost (numpy.ndarray): cost of state, shape(pred_len, state_size) or
+                shape(pop_size, pred_len, state_size)
         """
         return ((x - g_x)**2) * np.diag(FirstOrderLagConfigModule.Q)
 
@@ -84,7 +82,8 @@ class FirstOrderLagConfigModule():
             terminal_g_x (numpy.ndarray): terminal goal state,
                 shape(state_size, ) or shape(pop_size, state_size)
         Returns:
-            cost (numpy.ndarray): cost of state, none or shape(pop_size, )
+            cost (numpy.ndarray): cost of state, shape(pred_len, ) or
+                shape(pop_size, pred_len)
         """
         return ((terminal_x - terminal_g_x)**2) \
                 * np.diag(FirstOrderLagConfigModule.Sf)

@@ -40,7 +40,7 @@ def run(args):
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--controller_type", type=str, default="CEM")
+    parser.add_argument("--controller_type", type=str, default="DDP")
     parser.add_argument("--planner_type", type=str, default="const")
     parser.add_argument("--env", type=str, default="TwoWheeledConst")
     parser.add_argument("--result_dir", type=str, default="./result")

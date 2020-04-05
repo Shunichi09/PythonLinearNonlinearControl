@@ -24,7 +24,8 @@ class Controller():
         Returns:
             opt_input (numpy.ndarray): optimal input, shape(input_size, )
         """
-        raise NotImplementedError("Implement gradient of hamitonian with respect to the state")
+        raise NotImplementedError("Implement the algorithm to \
+                                   get optimal input")
     
     def calc_cost(self, curr_x, samples, g_xs):
         """ calculate the cost of input samples

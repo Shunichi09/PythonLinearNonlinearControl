@@ -140,18 +140,41 @@ class Model():
         """
         raise NotImplementedError("Implement terminal adjoint state")
 
-    def gradient_x(self, x, u):
-        """ gradient of model with respect to the state
+    @staticmethod
+    def calc_f_x(xs, us, dt):
+        """ gradient of model with respect to the state in batch form
         """ 
         raise NotImplementedError("Implement gradient of model \
                                    with respect to the state")
 
-    def gradient_u(self, x, u):
-        """ gradient of model with respect to the input
+    @staticmethod
+    def calc_f_u(xs, us, dt):
+        """ gradient of model with respect to the input in batch form
         """
         raise NotImplementedError("Implement gradient of model \
                                    with respect to the input")
     
+    @staticmethod
+    def calc_f_xx(xs, us, dt):
+        """ hessian of model with respect to the state in batch form
+        """ 
+        raise NotImplementedError("Implement hessian of model \
+                                   with respect to the state")
+
+    @staticmethod
+    def calc_f_ux(xs, us, dt):
+        """ hessian of model with respect to the input in batch form
+        """
+        raise NotImplementedError("Implement hessian of model \
+                                   with respect to the input and state")
+
+    @staticmethod
+    def calc_f_uu(xs, us, dt):
+        """ hessian of model with respect to the state in batch form
+        """ 
+        raise NotImplementedError("Implement hessian of model \
+                                   with respect to the input")
+
 class LinearModel(Model):
     """ discrete linear model, x[k+1] = Ax[k] + Bu[k]
     

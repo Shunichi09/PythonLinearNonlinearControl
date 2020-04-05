@@ -39,8 +39,11 @@ Following algorithms are implemented in PythonLinearNonlinearControl
   - Ref: Chua, K., Calandra, R., McAllister, R., & Levine, S. (2018). Deep reinforcement learning in a handful of trials using probabilistic dynamics models. In Advances in Neural Information Processing Systems (pp. 4754-4765)
     - [script](PythonLinearNonlinearControl/controllers/random.py)
 - [Iterative LQR (iLQR)](https://ieeexplore.ieee.org/document/6386025)
-  - Ref: Tassa, Y., Erez, T., & Todorov, E. (2012, October). Synthesis and stabilization of complex behaviors through online trajectory optimization. In 2012 IEEE/RSJ International Conference on Intelligent Robots and Systems (pp. 4906-4913). IEEE. and [Study Wolf](https://github.com/studywolf/control)
-    - [script (Coming soon)]()
+  - Ref: Tassa, Y., Erez, T., & Todorov, E. (2012, October). Synthesis and stabilization of complex behaviors through online trajectory optimization. In 2012 IEEE/RSJ International Conference on Intelligent Robots and Systems (pp. 4906-4913). IEEE. and [Study Wolf](https://github.com/studywolf/control), https://github.com/anassinator/ilqr
+    - [script](PythonLinearNonlinearControl/controllers/ilqr.py)
+- [Dynamic Differential Programing (DDP)](https://ieeexplore.ieee.org/document/6386025)
+  - Ref: Tassa, Y., Erez, T., & Todorov, E. (2012, October). Synthesis and stabilization of complex behaviors through online trajectory optimization. In 2012 IEEE/RSJ International Conference on Intelligent Robots and Systems (pp. 4906-4913). IEEE. and [Study Wolf](https://github.com/studywolf/control), https://github.com/anassinator/ilqr
+    - [script](PythonLinearNonlinearControl/controllers/ddp.py)
 - [Unconstrained Nonlinear Model Predictive Control (NMPC)](https://www.sciencedirect.com/science/article/pii/S0005109897000058)
   - Ref: Ohtsuka, T., & Fujii, H. A. (1997). Real-time optimization algorithm for nonlinear receding-horizon control. Automatica, 33(6), 1147-1154.
     - [script (Coming soon)]()
@@ -93,7 +96,7 @@ pip install -e .
 You can run the experiments as follows:
 
 ```
-python scripts/simple_run.py --model first-order_lag --controller CEM
+python scripts/simple_run.py --env first-order_lag --controller CEM
 ```
 
 **figures and animations are saved in the ./result folder.**

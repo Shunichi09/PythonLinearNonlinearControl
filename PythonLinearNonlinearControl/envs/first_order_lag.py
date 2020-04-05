@@ -91,7 +91,7 @@ class FirstOrderLagEnv(Env):
         # clip action
         u = np.clip(u,
                     self.config["input_lower_bound"],
-                    self.config["input_lower_bound"])
+                    self.config["input_upper_bound"])
 
         next_x = np.matmul(self.A, self.curr_x[:, np.newaxis]) \
                  + np.matmul(self.B, u[:, np.newaxis])

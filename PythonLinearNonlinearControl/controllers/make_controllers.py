@@ -3,6 +3,7 @@ from .cem import CEM
 from .random import RandomShooting
 from .mppi import MPPI
 from .ilqr import iLQR
+from .ddp import DDP
 
 def make_controller(args, config, model):
 
@@ -15,4 +16,6 @@ def make_controller(args, config, model):
     elif args.controller_type == "MPPI":
         return MPPI(config, model)
     elif args.controller_type == "iLQR":
+        return iLQR(config, model)
+    elif args.controller_type == "DDP":
         return iLQR(config, model)
