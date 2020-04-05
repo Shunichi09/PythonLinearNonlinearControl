@@ -12,9 +12,11 @@ class DDP(Controller):
     """ Differential Dynamic Programming
 
     Ref:
-        Tassa, Y., Erez, T., & Todorov, E. (2012). . In 2012 IEEE/RSJ International Conference on
+        Tassa, Y., Erez, T., & Todorov, E. (2012). 
+        In 2012 IEEE/RSJ International Conference on
         Intelligent Robots and Systems (pp. 4906-4913). and Study Wolf,
-        https://github.com/studywolf/control
+        https://github.com/studywolf/control, and
+        https://github.com/anassinator/ilqr
     """
     def __init__(self, config, model):
         """
@@ -41,7 +43,8 @@ class DDP(Controller):
 
         # controller parameters
         self.max_iter = config.opt_config["DDP"]["max_iter"]
-        self.mu = config.opt_config["DDP"]["mu"]
+        self.init_mu = config.opt_config["DDP"]["init_mu"]
+        self.mu = self.init_mu
         self.mu_min = config.opt_config["DDP"]["mu_min"]
         self.mu_max = config.opt_config["DDP"]["mu_max"]
         self.init_delta = config.opt_config["DDP"]["init_delta"]
@@ -81,6 +84,8 @@ class DDP(Controller):
         sol = self.prev_sol.copy()
         converged_sol = False
         update_sol = True
+        self.mu = self.init_mu
+        self.delta = self.init_delta
 
         # line search param
         alphas = 1.1**(-np.arange(10)**2)

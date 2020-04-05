@@ -121,7 +121,7 @@ class TwoWheeledModel(Model):
         f_xx[:, 0, 2, 2] = -np.cos(xs[:, 2]) * us[:, 0]
         f_xx[:, 1, 2, 2] = -np.sin(xs[:, 2]) * us[:, 0]
 
-        return f_xx
+        return f_xx * dt
 
     @staticmethod
     def calc_f_ux(xs, us, dt):
@@ -144,7 +144,7 @@ class TwoWheeledModel(Model):
         f_ux[:, 0, 0, 2] = -np.sin(xs[:, 2])
         f_ux[:, 1, 0, 2] = np.cos(xs[:, 2])
 
-        return f_ux
+        return f_ux * dt
     
     @staticmethod
     def calc_f_uu(xs, us, dt):
@@ -164,4 +164,4 @@ class TwoWheeledModel(Model):
 
         f_uu = np.zeros((pred_len, state_size, input_size, input_size))
 
-        return f_uu
+        return f_uu * dt

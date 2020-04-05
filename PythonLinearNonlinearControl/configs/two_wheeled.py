@@ -10,9 +10,9 @@ class TwoWheeledConfigModule():
     INPUT_SIZE = 2
     DT = 0.01
     # cost parameters
-    R = np.eye(INPUT_SIZE) * 0.1
-    Q = np.eye(STATE_SIZE) * 0.5
-    Sf = np.eye(STATE_SIZE)
+    R = np.diag([0.1, 0.1])
+    Q = np.diag([1., 1., 0.01])
+    Sf = np.diag([5., 5., 1.])
     # bounds
     INPUT_LOWER_BOUND = np.array([-1.5, 3.14])
     INPUT_UPPER_BOUND = np.array([1.5, 3.14])
@@ -41,7 +41,7 @@ class TwoWheeledConfigModule():
             },
            "iLQR":{
                 "max_iter": 500,
-                "mu": 1.,
+                "init_mu": 1.,
                 "mu_min": 1e-6,
                 "mu_max": 1e10,
                 "init_delta": 2.,
@@ -49,7 +49,7 @@ class TwoWheeledConfigModule():
            },
            "DDP":{
                 "max_iter": 500,
-                "mu": 1.,
+                "init_mu": 1.,
                 "mu_min": 1e-6,
                 "mu_max": 1e10,
                 "init_delta": 2.,
