@@ -10,16 +10,17 @@ PythonLinearNonLinearControl is a library implementing the linear and nonlinear 
 
 # Algorithms
 
-| Algorithm | Use Linear Model | Use Nonlinear Model | Need Gradient (Hamiltonian) | Need Gradient (Model) |
-|:----------|:---------------: |:----------------:|:----------------:|:----------------:|
-| Linear Model Predictive Control (MPC) | ✓ | x | x | x | 
-| Cross Entropy Method (CEM) | ✓ | ✓ | x | x | 
-| Model Preidictive Path Integral Control (MPPI) | ✓ | ✓ | x | x | 
-| Random Shooting Method (Random) | ✓ | ✓ | x | x | 
-| Iterative LQR (iLQR) | x | ✓ | x | ✓ | 
-| Unconstrained Nonlinear Model Predictive Control (NMPC) | x | ✓ | ✓ | x |
-| Constrained Nonlinear Model Predictive Control CGMRES (NMPC-CGMRES) | x | ✓ | ✓ | x |
-| Constrained Nonlinear Model Predictive Control Newton (NMPC-Newton) | x | ✓ | x | x |
+| Algorithm | Use Linear Model | Use Nonlinear Model | Need Gradient (Hamiltonian) | Need Gradient (Model) | Need Hessian (Model) |
+|:----------|:---------------: |:----------------:|:----------------:|:----------------:|:----------------:|
+| Linear Model Predictive Control (MPC) | ✓ | x | x | x | x |
+| Cross Entropy Method (CEM) | ✓ | ✓ | x | x | x |
+| Model Preidictive Path Integral Control (MPPI) | ✓ | ✓ | x | x | x |
+| Random Shooting Method (Random) | ✓ | ✓ | x | x | x |
+| Iterative LQR (iLQR) | x | ✓ | x | ✓ | x |
+| Differential Dynamic Programming (DDP) | x | ✓ | x | ✓ | ✓ |
+| Unconstrained Nonlinear Model Predictive Control (NMPC) | x | ✓ | ✓ | x | x |
+| Constrained Nonlinear Model Predictive Control CGMRES (NMPC-CGMRES) | x | ✓ | ✓ | x | x |
+| Constrained Nonlinear Model Predictive Control Newton (NMPC-Newton) | x | ✓ | x | x | x |
 
 "Need Gradient" means that you have to implement the gradient of the model or the gradient of hamiltonian.  
 This library is also easily to extend for your own situations.
@@ -41,7 +42,7 @@ Following algorithms are implemented in PythonLinearNonlinearControl
 - [Iterative LQR (iLQR)](https://ieeexplore.ieee.org/document/6386025)
   - Ref: Tassa, Y., Erez, T., & Todorov, E. (2012, October). Synthesis and stabilization of complex behaviors through online trajectory optimization. In 2012 IEEE/RSJ International Conference on Intelligent Robots and Systems (pp. 4906-4913). IEEE. and [Study Wolf](https://github.com/studywolf/control), https://github.com/anassinator/ilqr
     - [script](PythonLinearNonlinearControl/controllers/ilqr.py)
-- [Dynamic Differential Programing (DDP)](https://ieeexplore.ieee.org/document/6386025)
+- [Dynamic Differential Programming (DDP)](https://ieeexplore.ieee.org/document/6386025)
   - Ref: Tassa, Y., Erez, T., & Todorov, E. (2012, October). Synthesis and stabilization of complex behaviors through online trajectory optimization. In 2012 IEEE/RSJ International Conference on Intelligent Robots and Systems (pp. 4906-4913). IEEE. and [Study Wolf](https://github.com/studywolf/control), https://github.com/anassinator/ilqr
     - [script](PythonLinearNonlinearControl/controllers/ddp.py)
 - [Unconstrained Nonlinear Model Predictive Control (NMPC)](https://www.sciencedirect.com/science/article/pii/S0005109897000058)
