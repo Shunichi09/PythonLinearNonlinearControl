@@ -23,10 +23,6 @@ class DDP(Controller):
         """
         super(DDP, self).__init__(config, model)
             
-        if config.TYPE != "Nonlinear":
-            raise ValueError("{} could be not applied to \
-                              this controller".format(model))
-
         # model
         self.model = model
 
@@ -296,6 +292,7 @@ class DDP(Controller):
 
     def backward(self, f_x, f_u, f_xx, f_ux, f_uu, l_x, l_xx, l_u, l_uu, l_ux):
         """ backward step of iLQR
+
         Args:
             f_x (numpy.ndarray): gradient of model with respecto to state,
                 shape(pred_len+1, state_size, state_size)
@@ -317,7 +314,6 @@ class DDP(Controller):
                 shape(pred_len, input_size, input_size)
             l_ux (numpy.ndarray): hessian of cost with respect
                 to state and input, shape(pred_len, input_size, state_size)
-        
         Returns:
             k (numpy.ndarray): gain, shape(pred_len, input_size)
             K (numpy.ndarray): gain, shape(pred_len, input_size, state_size)
@@ -353,7 +349,8 @@ class DDP(Controller):
 
     def _Q(self, f_x, f_u, f_xx, f_ux, f_uu,
            l_x, l_u, l_xx, l_ux, l_uu, V_x, V_xx):
-        """Computes second order expansion.
+        """ compute Q function valued
+
         Args:
             f_x (numpy.ndarray): gradient of model with respecto to state,
                 shape(state_size, state_size)

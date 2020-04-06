@@ -7,7 +7,8 @@ from PythonLinearNonlinearControl.configs.make_configs import make_config
 from PythonLinearNonlinearControl.models.make_models import make_model
 from PythonLinearNonlinearControl.envs.make_envs import make_env
 from PythonLinearNonlinearControl.runners.make_runners import make_runner
-from PythonLinearNonlinearControl.plotters.plot_func import plot_results
+from PythonLinearNonlinearControl.plotters.plot_func import plot_results, \
+                                                            save_plot_data
 
 def run(args):
     # logger
@@ -36,13 +37,14 @@ def run(args):
 
     # plot results
     plot_results(args, history_x, history_u, history_g=history_g)
+    save_plot_data(args, history_x, history_u, history_g=history_g)
 
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--controller_type", type=str, default="DDP")
+    parser.add_argument("--controller_type", type=str, default="MPPIWilliams")
     parser.add_argument("--planner_type", type=str, default="const")
-    parser.add_argument("--env", type=str, default="TwoWheeledConst")
+    parser.add_argument("--env", type=str, default="FirstOrderLag")
     parser.add_argument("--result_dir", type=str, default="./result")
 
     args = parser.parse_args()

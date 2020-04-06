@@ -2,6 +2,7 @@ from .mpc import LinearMPC
 from .cem import CEM
 from .random import RandomShooting
 from .mppi import MPPI
+from .mppi_williams import MPPIWilliams
 from .ilqr import iLQR
 from .ddp import DDP
 
@@ -15,6 +16,8 @@ def make_controller(args, config, model):
         return RandomShooting(config, model)
     elif args.controller_type == "MPPI":
         return MPPI(config, model)
+    elif args.controller_type == "MPPIWilliams":
+        return MPPIWilliams(config, model)
     elif args.controller_type == "iLQR":
         return iLQR(config, model)
     elif args.controller_type == "DDP":
