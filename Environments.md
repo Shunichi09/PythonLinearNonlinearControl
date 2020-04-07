@@ -17,7 +17,7 @@ You can set arbinatry time constant, tau. The default is 0.63 s
 
 ### Cost.
 
-<img src="assets/quadratic_score.png" width="200">
+<img src="assets/quadratic_score.png" width="300">
 
 Q = diag[1., 1., 1., 1.], 
 R = diag[1., 1.]
@@ -32,7 +32,7 @@ X_g denote the goal states.
 
 ### Cost.
 
-<img src="assets/quadratic_score.png" width="200">
+<img src="assets/quadratic_score.png" width="300">
 
 Q = diag[5., 5., 1.], 
 R = diag[0.1, 0.1]
