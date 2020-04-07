@@ -1,6 +1,6 @@
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Coverage Status](https://coveralls.io/repos/github/Shunichi09/PythonLinearNonlinearControl/badge.svg?branch=master)](https://coveralls.io/github/Shunichi09/PythonLinearNonlinearControl?branch=master)
-[![Build Status](https://travis-ci.org/Shunichi09/PythonLinearNonlinearControl.svg?branch=master)](https://travis-ci.org/Shunichi09/PythonLinearNonlinearControl)
+[![Coverage Status](https://coveralls.io/repos/github/Shunichi09/PythonLinearNonlinearControl/badge.svg?branch=master&service=github)](https://coveralls.io/github/Shunichi09/PythonLinearNonlinearControl?branch=master&service=github)
+[![Build Status](https://travis-ci.org/Shunichi09/PythonLinearNonlinearControl.svg?branch=master&service=github)](https://travis-ci.org/Shunichi09/PythonLinearNonlinearControl)
 
 # PythonLinearNonLinearControl
 
@@ -116,21 +116,21 @@ It should be noted that **Model** and **Environment** are different. As mentione
 
 <img src="assets/concept.png" width="500">
 
-## Model
+## [Model](PythonLinearNonlinearControl/models/)
 
 System model. For an instance, in the case that a model is linear, this model should have a form, "x[k+1] = Ax[k] + Bu[k]".
 
 If you use gradient based control method, you are preferred to implement the gradients of the model, other wise the controllers use numeric gradients.
 
-## Planner
+## [Planner](PythonLinearNonlinearControl/planners/)
 
 Planner make the goal states.
 
-## Controller
+## [Controller](PythonLinearNonlinearControl/controllers/)
 
 Controller calculate the optimal inputs by using the model by using the algorithms.
 
-## Runner
+## [Runner](PythonLinearNonlinearControl/runners/)
 
 Runner runs the simulation.
 

@@ -39,7 +39,7 @@ R = diag[0.1, 0.1]
 
 X_g denote the goal states.
 
-## [CatpoleEnv (Swing up)]((PythonLinearNonlinearControl/envs/cartpole.py))
+## [CatpoleEnv (Swing up)](PythonLinearNonlinearControl/envs/cartpole.py)
 
 System equation.
 
