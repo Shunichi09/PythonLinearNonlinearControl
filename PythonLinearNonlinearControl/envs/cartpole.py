@@ -14,12 +14,16 @@ class CartPoleEnv(Env):
     def __init__(self):
         """
         """
-        self.config = {"state_size" : 4,\
-                       "input_size" : 1,\
-                       "dt" : 0.02,\
-                       "max_step" : 1000,\
-                       "input_lower_bound": None,\
-                       "input_upper_bound": None,
+        self.config = {"state_size" : 4,
+                       "input_size" : 1,
+                       "dt" : 0.02,
+                       "max_step" : 500,
+                       "input_lower_bound": [-3.],
+                       "input_upper_bound": [3.],
+                       "mp": 0.2,
+                       "mc": 1.,
+                       "l": 0.5,
+                       "g": 9.81,
                        }
 
         super(CartPoleEnv, self).__init__(self.config)
@@ -33,13 +37,13 @@ class CartPoleEnv(Env):
         """
         self.step_count = 0
         
-        self.curr_x = np.zeros(self.config["state_size"])
+        self.curr_x = np.array([0., 0., 0., 0.])
 
         if init_x is not None:
             self.curr_x = init_x
 
         # goal
-        self.g_x = np.array([0., 0., np.pi, 0.])
+        self.g_x = np.array([0., 0., -np.pi, 0.])
         
         # clear memory
         self.history_x = []
@@ -65,20 +69,43 @@ class CartPoleEnv(Env):
                         self.config["input_upper_bound"])
 
         # step
-        next_x = np.zeros(self.config["state_size"])
+        # x
+        d_x0 = self.curr_x[1]
+        # v_x
+        d_x1 = (u[0] + self.config["mp"] * np.sin(self.curr_x[2]) \
+               * (self.config["l"] * (self.curr_x[3]**2) \
+                  + self.config["g"] * np.cos(self.curr_x[2]))) \
+               / (self.config["mc"] + self.config["mp"] \
+                  * (np.sin(self.curr_x[2])**2))
+        # theta
+        d_x2 = self.curr_x[3]
+        
+        # v_theta
+        d_x3 = (-u[0] * np.cos(self.curr_x[2]) \
+                - self.config["mp"] * self.config["l"] * (self.curr_x[3]**2) \
+                  * np.cos(self.curr_x[2]) * np.sin(self.curr_x[2]) \
+                - (self.config["mc"] + self.config["mp"]) * self.config["g"] \
+                   * np.sin(self.curr_x[2])) \
+               / (self.config["l"] * (self.config["mc"] + self.config["mp"] \
+                                      * (np.sin(self.curr_x[2])**2)))
+        
+        next_x = self.curr_x +\
+                 np.array([d_x0, d_x1, d_x2, d_x3]) * self.config["dt"] 
 
         # TODO: costs
         costs = 0.
         costs += 0.1 * np.sum(u**2)
-        costs += np.sum((self.curr_x - self.g_x)**2)
-
+        costs += 6. * self.curr_x[0]**2 \
+                 + 12. * (np.cos(self.curr_x[2]) + 1.)**2 \
+                 + 0.1 * self.curr_x[1]**2 \
+                 + 0.1 * self.curr_x[3]**2
 
         # save history
         self.history_x.append(next_x.flatten())
         self.history_g_x.append(self.g_x.flatten())
         
         # update
-        self.curr_x = next_x.flatten()
+        self.curr_x = next_x.flatten().copy()
         # update costs
         self.step_count += 1
 

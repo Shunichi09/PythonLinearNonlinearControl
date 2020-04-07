@@ -1,6 +1,6 @@
 from .first_order_lag import FirstOrderLagEnv
 from .two_wheeled import TwoWheeledConstEnv
-from .cartpole import CartpoleEnv
+from .cartpole import CartPoleEnv
 
 def make_env(args):
 
@@ -9,6 +9,6 @@ def make_env(args):
     elif args.env == "TwoWheeledConst":
         return TwoWheeledConstEnv()
     elif args.env == "CartPole":
-        return CartpoleEnv()
+        return CartPoleEnv()
     
     raise NotImplementedError("There is not {} Env".format(args.env))
