@@ -211,3 +211,94 @@ class LinearModel(Model):
             next_x = np.matmul(curr_x, self.A.T) + np.matmul(u, self.B.T)
 
             return next_x
+    
+    def calc_f_x(self, xs, us, dt):
+        """ gradient of model with respect to the state in batch form
+
+        Args:
+            xs (numpy.ndarray): state, shape(pred_len+1, state_size)
+            us (numpy.ndarray): input, shape(pred_len, input_size,)
+        Return:
+            f_x (numpy.ndarray): gradient of model with respect to x,
+                shape(pred_len, state_size, state_size)
+        Notes:
+            This should be discrete form !!
+        """ 
+        # get size
+        (pred_len, _) = us.shape
+
+        return np.tile(self.A, (pred_len, 1, 1))
+
+    def calc_f_u(self, xs, us, dt):
+        """ gradient of model with respect to the input in batch form
+
+        Args:
+            xs (numpy.ndarray): state, shape(pred_len+1, state_size)
+            us (numpy.ndarray): input, shape(pred_len, input_size,)
+        Return:
+            f_u (numpy.ndarray): gradient of model with respect to x,
+                shape(pred_len, state_size, input_size)
+        Notes:
+            This should be discrete form !!
+        """ 
+        # get size
+        (pred_len, input_size) = us.shape
+
+        return np.tile(self.B, (pred_len, 1, 1))
+
+    @staticmethod
+    def calc_f_xx(xs, us, dt):
+        """ hessian of model with respect to the state in batch form
+
+        Args:
+            xs (numpy.ndarray): state, shape(pred_len+1, state_size)
+            us (numpy.ndarray): input, shape(pred_len, input_size,)
+        Return:
+            f_xx (numpy.ndarray): gradient of model with respect to x,
+                shape(pred_len, state_size, state_size, state_size)
+        """
+        # get size
+        (_, state_size) = xs.shape
+        (pred_len, _) = us.shape
+
+        f_xx = np.zeros((pred_len, state_size, state_size, state_size))
+
+        return f_xx
+
+    @staticmethod
+    def calc_f_ux(xs, us, dt):
+        """ hessian of model with respect to state and input in batch form
+
+        Args:
+            xs (numpy.ndarray): state, shape(pred_len+1, state_size)
+            us (numpy.ndarray): input, shape(pred_len, input_size,)
+        Return:
+            f_ux (numpy.ndarray): gradient of model with respect to x,
+                shape(pred_len, state_size, input_size, state_size)
+        """
+        # get size
+        (_, state_size) = xs.shape
+        (pred_len, input_size) = us.shape
+
+        f_ux = np.zeros((pred_len, state_size, input_size, state_size))
+
+        return f_ux
+    
+    @staticmethod
+    def calc_f_uu(xs, us, dt):
+        """ hessian of model with respect to input in batch form
+
+        Args:
+            xs (numpy.ndarray): state, shape(pred_len+1, state_size)
+            us (numpy.ndarray): input, shape(pred_len, input_size,)
+        Return:
+            f_uu (numpy.ndarray): gradient of model with respect to x,
+                shape(pred_len, state_size, input_size, input_size)
+        """
+        # get size
+        (_, state_size) = xs.shape
+        (pred_len, input_size) = us.shape
+
+        f_uu = np.zeros((pred_len, state_size, input_size, input_size))
+
+        return f_uu 

@@ -1,5 +1,6 @@
 from .first_order_lag import FirstOrderLagModel
 from .two_wheeled import TwoWheeledModel
+from .cartpole import CartPoleModel
 
 def make_model(args, config):
     
@@ -7,5 +8,7 @@ def make_model(args, config):
         return FirstOrderLagModel(config)
     elif args.env == "TwoWheeledConst" or args.env == "TwoWheeled":
         return TwoWheeledModel(config)
+    elif args.env == "CartPole":
+        return CartPoleModel(config)
     
     raise NotImplementedError("There is not {} Model".format(args.env))

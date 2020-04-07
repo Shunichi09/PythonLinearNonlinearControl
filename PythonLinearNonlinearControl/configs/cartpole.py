@@ -1,25 +1,24 @@
 import numpy as np
 
-class FirstOrderLagConfigModule():
+class CartPoleConfigModule():
     # parameters
-    ENV_NAME = "FirstOrderLag-v0"
-    TYPE = "Linear"
-    TASK_HORIZON = 1000
+    ENV_NAME = "CartPole-v0"
+    TYPE = "Nonlinear"
+    TASK_HORIZON = 500
     PRED_LEN = 50
     STATE_SIZE = 4
-    INPUT_SIZE = 2
-    DT = 0.05
+    INPUT_SIZE = 1
+    DT = 0.02
     # cost parameters
-    R = np.eye(INPUT_SIZE)
-    Q = np.eye(STATE_SIZE)
-    Sf = np.eye(STATE_SIZE)
+    R = np.diag([0.01])
     # bounds
-    INPUT_LOWER_BOUND = np.array([-0.5, -0.5])
-    INPUT_UPPER_BOUND = np.array([0.5, 0.5])
-    # DT_INPUT_LOWER_BOUND = np.array([-0.5 * DT, -0.5 * DT])
-    # DT_INPUT_UPPER_BOUND = np.array([0.25 * DT, 0.25 * DT])
-    DT_INPUT_LOWER_BOUND = None
-    DT_INPUT_UPPER_BOUND = None
+    INPUT_LOWER_BOUND = np.array([-3.])
+    INPUT_UPPER_BOUND = np.array([3.])
+    # parameters
+    MP = 0.2
+    MC = 1.
+    L = 0.5
+    G = 9.81
 
     def __init__(self):
         """ 
@@ -34,7 +33,7 @@ class FirstOrderLagConfigModule():
                 "num_elites": 50,
                 "max_iters": 15,
                 "alpha": 0.3,
-                "init_var":1.,
+                "init_var":9.,
                 "threshold":0.001
             },
             "MPPI":{
@@ -48,8 +47,6 @@ class FirstOrderLagConfigModule():
                 "lambda": 1.,
                 "noise_sigma": 0.9,
             },
-           "MPC":{
-           },
            "iLQR":{
                 "max_iter": 500,
                 "init_mu": 1.,
@@ -70,7 +67,7 @@ class FirstOrderLagConfigModule():
            },
            "NMPC-Newton":{
            },
-        }   
+        } 
 
     @staticmethod
     def input_cost_fn(u):
@@ -82,7 +79,7 @@ class FirstOrderLagConfigModule():
             cost (numpy.ndarray): cost of input, shape(pred_len, input_size) or
                 shape(pop_size, pred_len, input_size)
         """
-        return (u**2) * np.diag(FirstOrderLagConfigModule.R)
+        return (u**2) * np.diag(CartPoleConfigModule.R)
     
     @staticmethod
     def state_cost_fn(x, g_x):
@@ -93,10 +90,26 @@ class FirstOrderLagConfigModule():
             g_x (numpy.ndarray): goal state, shape(pred_len, state_size)
                 or shape(pop_size, pred_len, state_size)
         Returns:
-            cost (numpy.ndarray): cost of state, shape(pred_len, state_size) or
-                shape(pop_size, pred_len, state_size)
+            cost (numpy.ndarray): cost of state, shape(pred_len, 1) or
+                shape(pop_size, pred_len, 1)
         """
-        return ((x - g_x)**2) * np.diag(FirstOrderLagConfigModule.Q)
+
+        if len(x.shape) > 2:
+            return (6. * (x[:, :, 0]**2) \
+                   + 12. * ((np.cos(x[:, :, 2]) + 1.)**2) \
+                   + 0.1 * (x[:, :, 1]**2) \
+                   + 0.1 *  (x[:, :, 3]**2))[:, :, np.newaxis]
+
+        elif len(x.shape) > 1:
+            return (6. * (x[:, 0]**2) \
+                   + 12. * ((np.cos(x[:, 2]) + 1.)**2) \
+                   + 0.1 * (x[:, 1]**2) \
+                   + 0.1 * (x[:, 3]**2))[:,  np.newaxis]
+            
+        return 6. * (x[0]**2) \
+               + 12. * ((np.cos(x[2]) + 1.)**2) \
+               + 0.1 * (x[1]**2) \
+               + 0.1 * (x[3]**2)
 
     @staticmethod
     def terminal_state_cost_fn(terminal_x, terminal_g_x):
@@ -110,8 +123,17 @@ class FirstOrderLagConfigModule():
             cost (numpy.ndarray): cost of state, shape(pred_len, ) or
                 shape(pop_size, pred_len)
         """
-        return ((terminal_x - terminal_g_x)**2) \
-                * np.diag(FirstOrderLagConfigModule.Sf)
+
+        if len(terminal_x.shape) > 1:
+            return (6. * (terminal_x[:, 0]**2) \
+                   + 12. * ((np.cos(terminal_x[:, 2]) + 1.)**2) \
+                   + 0.1 * (terminal_x[:, 1]**2) \
+                   + 0.1 * (terminal_x[:, 3]**2))[:, np.newaxis]
+            
+        return 6. * (terminal_x[0]**2) \
+               + 12. * ((np.cos(terminal_x[2]) + 1.)**2) \
+               + 0.1 * (terminal_x[1]**2) \
+               + 0.1 * (terminal_x[3]**2)
     
     @staticmethod
     def gradient_cost_fn_with_state(x, g_x, terminal=False):
@@ -126,10 +148,9 @@ class FirstOrderLagConfigModule():
                 or shape(1, state_size)
         """
         if not terminal:
-            return 2. * (x - g_x) * np.diag(FirstOrderLagConfigModule.Q)
+            return None
         
-        return (2. * (x - g_x) \
-            * np.diag(FirstOrderLagConfigModule.Sf))[np.newaxis, :]
+        return None
 
     @staticmethod
     def gradient_cost_fn_with_input(x, u):
@@ -142,7 +163,7 @@ class FirstOrderLagConfigModule():
         Returns:
             l_u (numpy.ndarray): gradient of cost, shape(pred_len, input_size)
         """
-        return 2. * u * np.diag(FirstOrderLagConfigModule.R)
+        return None
 
     @staticmethod
     def hessian_cost_fn_with_state(x, g_x, terminal=False):
@@ -159,11 +180,9 @@ class FirstOrderLagConfigModule():
         """
         if not terminal:
             (pred_len, _) = x.shape
-            return -g_x[:, :, np.newaxis] \
-                * np.tile(2.*FirstOrderLagConfigModule.Q, (pred_len, 1, 1))               
+            return None              
         
-        return -g_x[:, np.newaxis] \
-            * np.tile(2.*FirstOrderLagConfigModule.Sf, (1, 1, 1))    
+        return None
 
     @staticmethod
     def hessian_cost_fn_with_input(x, u):
@@ -179,7 +198,7 @@ class FirstOrderLagConfigModule():
         """
         (pred_len, _) = u.shape
 
-        return np.tile(2.*FirstOrderLagConfigModule.R, (pred_len, 1, 1))
+        return None
     
     @staticmethod
     def hessian_cost_fn_with_input_state(x, u):

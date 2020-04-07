@@ -21,10 +21,6 @@ class iLQR(Controller):
         """
         super(iLQR, self).__init__(config, model)
             
-        if config.TYPE != "Nonlinear":
-            raise ValueError("{} could be not applied to \
-                              this controller".format(model))
-
         # model
         self.model = model
 

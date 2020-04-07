@@ -86,7 +86,7 @@ class TwoWheeledConstEnv(Env):
         # TODO: costs
         costs = 0.
         costs += 0.1 * np.sum(u**2)
-        costs += np.sum((self.curr_x - self.g_x)**2)
+        costs += np.sum(((self.curr_x - self.g_x)**2) * np.array([5., 5., 1.]))
 
         # save history
         self.history_x.append(next_x.flatten())

@@ -14,7 +14,8 @@ PythonLinearNonLinearControl is a library implementing the linear and nonlinear 
 |:----------|:---------------: |:----------------:|:----------------:|:----------------:|:----------------:|
 | Linear Model Predictive Control (MPC) | ✓ | x | x | x | x |
 | Cross Entropy Method (CEM) | ✓ | ✓ | x | x | x |
-| Model Preidictive Path Integral Control (MPPI) | ✓ | ✓ | x | x | x |
+| Model Preidictive Path Integral Control of Nagabandi, A. (MPPI) | ✓ | ✓ | x | x | x |
+| Model Preidictive Path Integral Control of Williams, G. (MPPIWilliams) | ✓ | ✓ | x | x | x |
 | Random Shooting Method (Random) | ✓ | ✓ | x | x | x |
 | Iterative LQR (iLQR) | x | ✓ | x | ✓ | x |
 | Differential Dynamic Programming (DDP) | x | ✓ | x | ✓ | ✓ |
@@ -33,9 +34,12 @@ Following algorithms are implemented in PythonLinearNonlinearControl
 - [Cross Entropy Method (CEM)](https://arxiv.org/abs/1805.12114)
   - Ref: Chua, K., Calandra, R., McAllister, R., & Levine, S. (2018). Deep reinforcement learning in a handful of trials using probabilistic dynamics models. In Advances in Neural Information Processing Systems (pp. 4754-4765)
     - [script](PythonLinearNonlinearControl/controllers/cem.py)
-- [Model Preidictive Path Integral Control (MPPI)](https://arxiv.org/abs/1909.11652)
+- [Model Preidictive Path Integral Control of Nagabandi, A. (MPPI)](https://arxiv.org/abs/1909.11652)
   - Ref: Nagabandi, A., Konoglie, K., Levine, S., & Kumar, V. (2019). Deep Dynamics Models for Learning Dexterous Manipulation. arXiv preprint arXiv:1909.11652.
     - [script](PythonLinearNonlinearControl/controllers/mppi.py)
+- [Model Preidictive Path Integral Control of Williams, G. (MPPIWilliams)](https://ieeexplore.ieee.org/abstract/document/7989202)
+  - Ref: Williams, G., Wagener, N., Goldfain, B., Drews, P., Rehg, J. M., Boots, B., & Theodorou, E. A. (2017, May). Information theoretic MPC for model-based reinforcement learning. In 2017 IEEE International Conference on Robotics and Automation (ICRA) (pp. 1714-1721). IEEE.
+    - [script](PythonLinearNonlinearControl/controllers/mppi_williams.py)
 - [Random Shooting Method (Random)](https://arxiv.org/abs/1805.12114)
   - Ref: Chua, K., Calandra, R., McAllister, R., & Levine, S. (2018). Deep reinforcement learning in a handful of trials using probabilistic dynamics models. In Advances in Neural Information Processing Systems (pp. 4754-4765)
     - [script](PythonLinearNonlinearControl/controllers/random.py)
@@ -62,9 +66,12 @@ Following algorithms are implemented in PythonLinearNonlinearControl
 | First Order Lag System | ✓ | x | 4 | 2 | 
 | Two wheeled System (Constant Goal) | x | ✓ | 3 | 2 | 
 | Two wheeled System (Moving Goal) (Coming soon) | x | ✓ | 3 | 2 | 
+| Cartpole (Swing up) | x | ✓ | 4 | 1 | 
 
-All environments are continuous.
+All states and inputs of environments are continuous.
 **It should be noted that the algorithms for linear model could be applied to nonlinear enviroments if you have linealized the model of nonlinear environments.**
+
+You could know abount our environmets more in [Environments.md](Environments.md)
 
 # Usage 
 

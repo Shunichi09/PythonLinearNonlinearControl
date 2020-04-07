@@ -39,6 +39,11 @@ class TwoWheeledConfigModule():
                 "kappa": 0.9,
                 "noise_sigma": 0.5,
             },
+            "MPPIWilliams":{
+                "popsize": 5000,
+                "lambda": 1,
+                "noise_sigma": 1.,
+            },
            "iLQR":{
                 "max_iter": 500,
                 "init_mu": 1.,
