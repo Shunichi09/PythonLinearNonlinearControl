@@ -90,8 +90,41 @@ class CartPoleModel(Model):
 
         f_x = np.zeros((pred_len, state_size, state_size))
 
-        f_x[:, 0, 2] = -np.sin(xs[:, 2]) * us[:, 0]
-        f_x[:, 1, 2] = np.cos(xs[:, 2]) * us[:, 0]
+        # f_x_dot
+        f_x[:, 0, 1] = np.ones(pred_len)
+
+        # f_theta
+        tmp = ((self.mc + self.mp * np.sin(xs[:, 2])**2)**(-2)) \
+              * self.mp * 2. * np.sin(xs[:, 2]) * np.cos(xs[:, 2])
+        tmp2 = 1. / (self.mc + self.mp * (np.sin(xs[:, 2])**2))
+
+        f_x[:, 1, 2] = - us[:, 0] * tmp \
+                       - tmp * (self.mp * np.sin(xs[:, 2]) \
+                                * (self.l * xs[:, 3]**2 \
+                                   + self.g * np.cos(xs[:, 2]))) \
+                       + tmp2 * (self.mp * np.cos(xs[:, 2]) * self.l \
+                                 * xs[:, 3]**2 \
+                                 + self.mp * self.g * (np.cos(xs[:, 2])**2 \
+                                                       - np.sin(xs[:, 2])**2))
+        f_x[:, 3, 2] = - 1. / self.l * tmp \
+                        * (-us[:, 0] * np.cos(xs[:, 2]) \
+                           - self.mp * self.l * (xs[:, 3]**2) \
+                           * np.cos(xs[:, 2]) * np.sin(xs[:, 2]) \
+                           - (self.mc + self.mp) * self.g * np.sin(xs[:, 2])) \
+                        +  1. / self.l * tmp2 \
+                           * (us[:, 0] * np.sin(xs[:, 2]) \
+                              - self.mp * self.l * xs[:, 3]**2 \
+                                * (np.cos(xs[:, 2])**2 - np.sin(xs[:, 2])**2) \
+                              - (self.mc + self.mp) \
+                                 * self.g * np.cos(xs[:, 2]))
+
+        # f_theta_dot
+        f_x[:, 1, 3] = tmp2 * (self.mp * np.sin(xs[:, 2]) \
+                       * self.l * 2 * xs[:, 3])
+        f_x[:, 2, 3] = np.ones(pred_len)
+        f_x[:, 3, 3] = 1. / self.l * tmp2 \
+                        * (-2. * self.mp * self.l * xs[:, 3] \
+                           * np.cos(xs[:, 2]) * np.sin(xs[:, 2]))
 
         return f_x * dt + np.eye(state_size)  # to discrete form
 
@@ -139,10 +172,7 @@ class CartPoleModel(Model):
 
         f_xx = np.zeros((pred_len, state_size, state_size, state_size))
 
-        f_xx[:, 0, 2, 2] = -np.cos(xs[:, 2]) * us[:, 0]
-        f_xx[:, 1, 2, 2] = -np.sin(xs[:, 2]) * us[:, 0]
-
-        return f_xx * dt
+        raise NotImplementedError
 
     def calc_f_ux(self, xs, us, dt):
         """ hessian of model with respect to state and input in batch form
@@ -161,11 +191,8 @@ class CartPoleModel(Model):
 
         f_ux = np.zeros((pred_len, state_size, input_size, state_size))
 
-        f_ux[:, 0, 0, 2] = -np.sin(xs[:, 2])
-        f_ux[:, 1, 0, 2] = np.cos(xs[:, 2])
+        raise NotImplementedError
 
-        return f_ux * dt
-    
     def calc_f_uu(self, xs, us, dt):
         """ hessian of model with respect to input in batch form
 
@@ -183,4 +210,4 @@ class CartPoleModel(Model):
 
         f_uu = np.zeros((pred_len, state_size, input_size, input_size))
 
-        return f_uu * dt
+        raise NotImplementedError

@@ -50,11 +50,6 @@ class iLQR(Controller):
         self.input_size = config.INPUT_SIZE
         self.dt = config.DT
 
-        # cost parameters
-        self.Q = config.Q
-        self.R = config.R
-        self.Sf = config.Sf
-        
         # initialize
         self.prev_sol = np.zeros((self.pred_len, self.input_size))
 

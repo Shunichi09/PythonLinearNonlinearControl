@@ -10,7 +10,11 @@ class CartPoleConfigModule():
     INPUT_SIZE = 1
     DT = 0.02
     # cost parameters
-    R = np.diag([0.01])
+    R = np.diag([1.])  # 0.01 is worked for MPPI and CEM and MPPIWilliams
+                       # 1. is worked for iLQR 
+    Terminal_Weight = 1.
+    Q = None
+    Sf = None
     # bounds
     INPUT_LOWER_BOUND = np.array([-3.])
     INPUT_UPPER_BOUND = np.array([3.])
@@ -128,12 +132,14 @@ class CartPoleConfigModule():
             return (6. * (terminal_x[:, 0]**2) \
                    + 12. * ((np.cos(terminal_x[:, 2]) + 1.)**2) \
                    + 0.1 * (terminal_x[:, 1]**2) \
-                   + 0.1 * (terminal_x[:, 3]**2))[:, np.newaxis]
+                   + 0.1 * (terminal_x[:, 3]**2))[:, np.newaxis] \
+                    * CartPoleConfigModule.Terminal_Weight
             
-        return 6. * (terminal_x[0]**2) \
+        return (6. * (terminal_x[0]**2) \
                + 12. * ((np.cos(terminal_x[2]) + 1.)**2) \
                + 0.1 * (terminal_x[1]**2) \
-               + 0.1 * (terminal_x[3]**2)
+               + 0.1 * (terminal_x[3]**2)) \
+                * CartPoleConfigModule.Terminal_Weight
     
     @staticmethod
     def gradient_cost_fn_with_state(x, g_x, terminal=False):
@@ -148,9 +154,21 @@ class CartPoleConfigModule():
                 or shape(1, state_size)
         """
         if not terminal:
-            return None
+            cost_dx0 = 12. * x[:, 0] 
+            cost_dx1 = 0.2 * x[:, 1]
+            cost_dx2 = 24. * (1 + np.cos(x[:, 2])) * -np.sin(x[:, 2])
+            cost_dx3 = 0.2 * x[:, 3]
+            cost_dx = np.stack((cost_dx0, cost_dx1,\
+                                cost_dx2, cost_dx3), axis=1)
+            return cost_dx
         
-        return None
+        cost_dx0 = 12. * x[0] 
+        cost_dx1 = 0.2 * x[1]
+        cost_dx2 = 24. * (1 + np.cos(x[2])) * -np.sin(x[2])
+        cost_dx3 = 0.2 * x[3]
+        cost_dx = np.array([[cost_dx0, cost_dx1, cost_dx2, cost_dx3]])
+        
+        return cost_dx * CartPoleConfigModule.Terminal_Weight
 
     @staticmethod
     def gradient_cost_fn_with_input(x, u):
@@ -163,7 +181,7 @@ class CartPoleConfigModule():
         Returns:
             l_u (numpy.ndarray): gradient of cost, shape(pred_len, input_size)
         """
-        return None
+        return 2. * u * np.diag(CartPoleConfigModule.R)
 
     @staticmethod
     def hessian_cost_fn_with_state(x, g_x, terminal=False):
@@ -179,10 +197,30 @@ class CartPoleConfigModule():
                 shape(1, state_size, state_size) or
         """
         if not terminal:
-            (pred_len, _) = x.shape
-            return None              
+            (pred_len, state_size) = x.shape
+            hessian = np.eye(state_size)
+            hessian = np.tile(hessian, (pred_len, 1, 1))
+            hessian[:, 0, 0] = 12.
+            hessian[:, 1, 1] = 0.2
+            hessian[:, 2, 2] = 24. * -np.sin(x[:, 2]) \
+                               * (-np.sin(x[:, 2])) \
+                               + 24. * (1. + np.cos(x[:, 2])) \
+                                 * -np.cos(x[:, 2])
+            hessian[:, 3, 3] = 0.2
+
+            return hessian
         
-        return None
+        state_size = len(x)
+        hessian = np.eye(state_size)
+        hessian[0, 0] = 12.
+        hessian[1, 1] = 0.2
+        hessian[2, 2] = 24. * -np.sin(x[2]) \
+                         * (-np.sin(x[2])) \
+                        + 24. * (1. + np.cos(x[2])) \
+                          * -np.cos(x[2])
+        hessian[3, 3] = 0.2
+
+        return hessian[np.newaxis, :, :] * CartPoleConfigModule.Terminal_Weight
 
     @staticmethod
     def hessian_cost_fn_with_input(x, u):
@@ -198,7 +236,7 @@ class CartPoleConfigModule():
         """
         (pred_len, _) = u.shape
 
-        return None
+        return np.tile(2.*CartPoleConfigModule.R, (pred_len, 1, 1))
     
     @staticmethod
     def hessian_cost_fn_with_input_state(x, u):
