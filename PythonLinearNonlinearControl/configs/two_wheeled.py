@@ -153,11 +153,9 @@ class TwoWheeledConfigModule():
         """
         if not terminal:
             (pred_len, _) = x.shape
-            return -g_x[:, :, np.newaxis] \
-                * np.tile(2.*TwoWheeledConfigModule.Q, (pred_len, 1, 1))               
+            return np.tile(2.*TwoWheeledConfigModule.Q, (pred_len, 1, 1))               
         
-        return -g_x[:, np.newaxis] \
-            * np.tile(2.*TwoWheeledConfigModule.Sf, (1, 1, 1))    
+        return np.tile(2.*TwoWheeledConfigModule.Sf, (1, 1, 1))    
 
     @staticmethod
     def hessian_cost_fn_with_input(x, u):

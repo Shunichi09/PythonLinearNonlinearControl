@@ -37,7 +37,8 @@ class CartPoleEnv(Env):
         """
         self.step_count = 0
         
-        self.curr_x = np.array([0., 0., 0., 0.])
+        theta = np.random.randn(1)
+        self.curr_x = np.array([0., 0., theta[0], 0.])
 
         if init_x is not None:
             self.curr_x = init_x

@@ -40,3 +40,61 @@ class TestTwoWheeledModel():
         pred_xs_alltogether = two_wheeled_model.predict_traj(curr_x, u)[0]
 
         assert pred_xs_alltogether == pytest.approx(pred_xs)
+    
+    def test_gradient_state(self):
+        
+        config = TwoWheeledConfigModule()
+        two_wheeled_model = TwoWheeledModel(config)
+
+        xs = np.ones((1, config.STATE_SIZE))
+        xs[0, -1] = np.pi / 6.
+        us = np.ones((1, config.INPUT_SIZE))
+
+        grad = two_wheeled_model.calc_f_x(xs, us, config.DT)
+
+        # expected cost
+        expected_grad = np.zeros((1, config.STATE_SIZE, config.STATE_SIZE))
+        eps = 1e-4
+
+        for i in range(config.STATE_SIZE):
+            tmp_x = xs.copy()
+            tmp_x[0, i] = xs[0, i] + eps
+            forward = \
+                two_wheeled_model.predict_next_state(tmp_x[0], us[0])
+            tmp_x = xs.copy()
+            tmp_x[0, i] = xs[0, i] - eps
+            backward = \
+                two_wheeled_model.predict_next_state(tmp_x[0], us[0])
+
+            expected_grad[0, :, i] = (forward - backward) / (2. * eps)
+        
+        assert grad == pytest.approx(expected_grad)
+    
+    def test_gradient_input(self):
+        
+        config = TwoWheeledConfigModule()
+        two_wheeled_model = TwoWheeledModel(config)
+
+        xs = np.ones((1, config.STATE_SIZE))
+        xs[0, -1] = np.pi / 6.
+        us = np.ones((1, config.INPUT_SIZE))
+
+        grad = two_wheeled_model.calc_f_u(xs, us, config.DT)
+
+        # expected cost
+        expected_grad = np.zeros((1, config.STATE_SIZE, config.INPUT_SIZE))
+        eps = 1e-4
+
+        for i in range(config.INPUT_SIZE):
+            tmp_u = us.copy()
+            tmp_u[0, i] = us[0, i] + eps
+            forward = \
+                two_wheeled_model.predict_next_state(xs[0], tmp_u[0])
+            tmp_u = us.copy()
+            tmp_u[0, i] = us[0, i] - eps
+            backward = \
+                two_wheeled_model.predict_next_state(xs[0], tmp_u[0])
+
+            expected_grad[0, :, i] = (forward - backward) / (2. * eps)
+        
+        assert grad == pytest.approx(expected_grad)
