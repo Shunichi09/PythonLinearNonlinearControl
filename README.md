@@ -10,7 +10,7 @@ Due to use only basic libralies (scipy, numpy), this library is  to extend for y
 
 <div><img src="assets/concept.png" width="500"/></div>
 
-<img src="assets/cartpole.gif" width="350"> <img src="assets/twowheeledconst.gif" width="350"> <img src="assets/twowheeledtrack.gif" width="350">
+<img src="assets/cartpole.gif" width="350"> <img src="assets/twowheeledtrack.gif" width="350">
 
 # Algorithms
 
