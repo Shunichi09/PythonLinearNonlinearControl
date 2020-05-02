@@ -1,5 +1,6 @@
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Coverage Status](https://coveralls.io/repos/github/Shunichi09/PythonLinearNonlinearControl/badge.svg?branch=master&service=github)](https://coveralls.io/github/Shunichi09/PythonLinearNonlinearControl?branch=master&service=github)
+[![GitHub issues open](https://img.shields.io/github/issues/Shunichi09/PythonLinearNonlinearControl.svg)]()
 [![Build Status](https://travis-ci.org/Shunichi09/PythonLinearNonlinearControl.svg?branch=master&service=github)](https://travis-ci.org/Shunichi09/PythonLinearNonlinearControl)
 
 # PythonLinearNonLinearControl
