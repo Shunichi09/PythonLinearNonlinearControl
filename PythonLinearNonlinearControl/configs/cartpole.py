@@ -3,6 +3,7 @@ import numpy as np
 class CartPoleConfigModule():
     # parameters
     ENV_NAME = "CartPole-v0"
+    PLANNER_TYPE = "Const"
     TYPE = "Nonlinear"
     TASK_HORIZON = 500
     PRED_LEN = 50
@@ -10,9 +11,9 @@ class CartPoleConfigModule():
     INPUT_SIZE = 1
     DT = 0.02
     # cost parameters
-    R = np.diag([1.])  # 0.01 is worked for MPPI and CEM and MPPIWilliams
+    R = np.diag([0.01])  # 0.01 is worked for MPPI and CEM and MPPIWilliams
                        # 1. is worked for iLQR 
-    Terminal_Weight = 1.
+    TERMINAL_WEIGHT = 1.
     Q = None
     Sf = None
     # bounds
@@ -23,6 +24,7 @@ class CartPoleConfigModule():
     MC = 1.
     L = 0.5
     G = 9.81
+    CART_SIZE = (0.15, 0.1)
 
     def __init__(self):
         """ 
@@ -76,6 +78,7 @@ class CartPoleConfigModule():
     @staticmethod
     def input_cost_fn(u):
         """ input cost functions
+
         Args:
             u (numpy.ndarray): input, shape(pred_len, input_size)
                 or shape(pop_size, pred_len, input_size)
@@ -88,6 +91,7 @@ class CartPoleConfigModule():
     @staticmethod
     def state_cost_fn(x, g_x):
         """ state cost function
+
         Args:
             x (numpy.ndarray): state, shape(pred_len, state_size)
                 or shape(pop_size, pred_len, state_size)
@@ -118,6 +122,7 @@ class CartPoleConfigModule():
     @staticmethod
     def terminal_state_cost_fn(terminal_x, terminal_g_x):
         """
+
         Args:
             terminal_x (numpy.ndarray): terminal state,
                 shape(state_size, ) or shape(pop_size, state_size)
@@ -133,13 +138,13 @@ class CartPoleConfigModule():
                    + 12. * ((np.cos(terminal_x[:, 2]) + 1.)**2) \
                    + 0.1 * (terminal_x[:, 1]**2) \
                    + 0.1 * (terminal_x[:, 3]**2))[:, np.newaxis] \
-                    * CartPoleConfigModule.Terminal_Weight
+                    * CartPoleConfigModule.TERMINAL_WEIGHT
             
         return (6. * (terminal_x[0]**2) \
                + 12. * ((np.cos(terminal_x[2]) + 1.)**2) \
                + 0.1 * (terminal_x[1]**2) \
                + 0.1 * (terminal_x[3]**2)) \
-                * CartPoleConfigModule.Terminal_Weight
+                * CartPoleConfigModule.TERMINAL_WEIGHT
     
     @staticmethod
     def gradient_cost_fn_with_state(x, g_x, terminal=False):
@@ -168,7 +173,7 @@ class CartPoleConfigModule():
         cost_dx3 = 0.2 * x[3]
         cost_dx = np.array([[cost_dx0, cost_dx1, cost_dx2, cost_dx3]])
         
-        return cost_dx * CartPoleConfigModule.Terminal_Weight
+        return cost_dx * CartPoleConfigModule.TERMINAL_WEIGHT
 
     @staticmethod
     def gradient_cost_fn_with_input(x, u):
@@ -177,7 +182,6 @@ class CartPoleConfigModule():
         Args:
             x (numpy.ndarray): state, shape(pred_len, state_size)
             u (numpy.ndarray): goal state, shape(pred_len, input_size)
-        
         Returns:
             l_u (numpy.ndarray): gradient of cost, shape(pred_len, input_size)
         """
@@ -190,7 +194,6 @@ class CartPoleConfigModule():
         Args:
             x (numpy.ndarray): state, shape(pred_len, state_size)
             g_x (numpy.ndarray): goal state, shape(pred_len, state_size)
-        
         Returns:
             l_xx (numpy.ndarray): gradient of cost,
                 shape(pred_len, state_size, state_size) or
@@ -220,7 +223,7 @@ class CartPoleConfigModule():
                           * -np.cos(x[2])
         hessian[3, 3] = 0.2
 
-        return hessian[np.newaxis, :, :] * CartPoleConfigModule.Terminal_Weight
+        return hessian[np.newaxis, :, :] * CartPoleConfigModule.TERMINAL_WEIGHT
 
     @staticmethod
     def hessian_cost_fn_with_input(x, u):
@@ -229,7 +232,6 @@ class CartPoleConfigModule():
         Args:
             x (numpy.ndarray): state, shape(pred_len, state_size)
             u (numpy.ndarray): goal state, shape(pred_len, input_size)
-        
         Returns:
             l_uu (numpy.ndarray): gradient of cost,
                 shape(pred_len, input_size, input_size)
@@ -245,7 +247,6 @@ class CartPoleConfigModule():
         Args:
             x (numpy.ndarray): state, shape(pred_len, state_size)
             u (numpy.ndarray): goal state, shape(pred_len, input_size)
-        
         Returns:
             l_ux (numpy.ndarray): gradient of cost ,
                 shape(pred_len, input_size, state_size)

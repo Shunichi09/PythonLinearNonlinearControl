@@ -5,8 +5,11 @@
 # PythonLinearNonLinearControl
 
 PythonLinearNonLinearControl is a library implementing the linear and nonlinear control theories in python.
+Due to use only basic libralies (scipy, numpy), this library is also easily to extend for your own situations.
 
-<img src="assets/concept.png" width="500">
+<div><img src="assets/concept.png" width="500"/></div>
+
+<img src="assets/cartpole.gif" width="350"> <img src="assets/twowheeledconst.gif" width="350"> <img src="assets/twowheeledtrack.gif" width="350">
 
 # Algorithms
 
@@ -24,7 +27,6 @@ PythonLinearNonLinearControl is a library implementing the linear and nonlinear 
 | Constrained Nonlinear Model Predictive Control Newton (NMPC-Newton) | x | ✓ | x | x | x |
 
 "Need Gradient" means that you have to implement the gradient of the model or the gradient of hamiltonian.  
-This library is also easily to extend for your own situations.
 
 Following algorithms are implemented in PythonLinearNonlinearControl
 
@@ -61,11 +63,13 @@ Following algorithms are implemented in PythonLinearNonlinearControl
 
 # Environments
 
+There are 4 example environments, "FirstOrderLag", "TwoWheeledConst", "TwoWheeledTrack" and "Cartpole".
+
 | Name | Linear | Nonlinear | State Size | Input size |
 |:----------|:---------------:|:----------------:|:----------------:|:----------------:|
 | First Order Lag System | ✓ | x | 4 | 2 | 
 | Two wheeled System (Constant Goal) | x | ✓ | 3 | 2 | 
-| Two wheeled System (Moving Goal) (Coming soon) | x | ✓ | 3 | 2 | 
+| Two wheeled System (Moving Goal) | x | ✓ | 3 | 2 | 
 | Cartpole (Swing up) | x | ✓ | 4 | 1 | 
 
 All states and inputs of environments are continuous.
@@ -104,7 +108,7 @@ pip install -e .
 You can run the experiments as follows:
 
 ```
-python scripts/simple_run.py --env first-order_lag --controller CEM
+python scripts/simple_run.py --env FirstOrderLag --controller CEM
 ```
 
 **figures and animations are saved in the ./result folder.**
@@ -147,9 +151,9 @@ Coming soon !!
 # Requirements
 
 - numpy
-- matplotlib
-- cvxopt
 - scipy
+- matplotlib (for figures and animations)
+- ffmpeg (for animations)
 
 # License
 

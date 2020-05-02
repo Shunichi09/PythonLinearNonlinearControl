@@ -1,7 +1,8 @@
 from logging import getLogger
 
 import numpy as np
-from cvxopt import matrix, solvers
+from scipy.optimize import minimize
+from scipy.optimize import LinearConstraint
 
 from .controller import Controller
 from ..envs.cost import calc_cost
@@ -61,6 +62,7 @@ class LinearMPC(Controller):
         self.F = None
         self.f = None
         self.setup()
+        self.prev_sol = np.zeros(self.input_size*self.pred_len)
 
         # history
         self.history_u = [np.zeros(self.input_size)]
@@ -183,6 +185,22 @@ class LinearMPC(Controller):
 
         ub = np.array(b).flatten()
 
+        # using cvxopt
+        def optimized_func(dt_us):
+            return (np.dot(dt_us, np.dot(H, dt_us.reshape(-1, 1))) \
+                    - np.dot(G.T, dt_us.reshape(-1, 1)))[0]
+
+        # constraint
+        lb = np.array([-np.inf for _ in range(len(ub))])  # one side cons
+        cons = LinearConstraint(A, lb, ub)
+        # solve
+        opt_sol = minimize(optimized_func, self.prev_sol.flatten(),\
+                           constraints=[cons])
+        opt_dt_us = opt_sol.x
+
+        """ using cvxopt ver,
+        if you want to solve more quick please use cvxopt instead of scipy
+        
         # make cvxpy problem formulation
         P = 2*matrix(H)
         q = matrix(-1 * G)
@@ -190,12 +208,15 @@ class LinearMPC(Controller):
         b = matrix(ub)
 
         # solve the problem
-        opt_result = solvers.qp(P, q, G=A, h=b)
-        opt_dt_us = np.array(list(opt_result['x']))
+        opt_sol = solvers.qp(P, q, G=A, h=b)
+        opt_dt_us = np.array(list(opt_sol['x']))
+        """
+
         # to dt form
         opt_dt_u_seq = np.cumsum(opt_dt_us.reshape(self.pred_len,\
                                                    self.input_size),
                                  axis=0)
+        self.prev_sol = opt_dt_u_seq.copy()
         
         opt_u_seq = opt_dt_u_seq + self.history_u[-1]
         

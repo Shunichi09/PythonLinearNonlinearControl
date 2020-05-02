@@ -113,3 +113,8 @@ class FirstOrderLagEnv(Env):
         return next_x.flatten(), cost, \
                self.step_count > self.config["max_step"], \
                {"goal_state" : self.g_x}
+    
+    def plot_func(self, to_plot, i=None, history_x=None, history_g_x=None):
+        """
+        """
+        raise ValueError("FirstOrderLag does not have animation")

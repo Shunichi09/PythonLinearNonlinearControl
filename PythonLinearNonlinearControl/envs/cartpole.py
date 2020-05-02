@@ -1,6 +1,8 @@
 import numpy as np
+from matplotlib.axes import Axes
 
 from .env import Env
+from ..plotters.plot_objs import square
 
 class CartPoleEnv(Env):
     """ Cartpole Environment
@@ -24,6 +26,7 @@ class CartPoleEnv(Env):
                        "mc": 1.,
                        "l": 0.5,
                        "g": 9.81,
+                       "cart_size": (0.15, 0.1),
                        }
 
         super(CartPoleEnv, self).__init__(self.config)
@@ -113,3 +116,63 @@ class CartPoleEnv(Env):
         return next_x.flatten(), costs, \
                self.step_count > self.config["max_step"], \
                {"goal_state" : self.g_x}
+    
+    def plot_func(self, to_plot, i=None, history_x=None, history_g_x=None):
+        """ plot cartpole object function
+        
+        Args:
+            to_plot (axis or imgs): plotted objects
+            i (int): frame count 
+            history_x (numpy.ndarray): history of state, shape(iters, state)
+            history_g_x (numpy.ndarray): history of goal state,
+                                         shape(iters, state)
+        Returns:
+            None or imgs : imgs order is ["cart_img", "pole_img"]
+        """
+        if isinstance(to_plot, Axes):
+            imgs = {}  # create new imgs
+            
+            imgs["cart"] = to_plot.plot([], [], c="k")[0]
+            imgs["pole"] = to_plot.plot([], [], c="k", linewidth=5)[0]
+            imgs["center"] = to_plot.plot([], [], marker="o", c="k",\
+                                          markersize=10)[0]
+            # centerline
+            to_plot.plot(np.linspace(-1., 1., num=50), np.zeros(50),\
+                         c="k", linestyle="dashed")
+            
+            # set axis
+            to_plot.set_xlim([-1., 1.])
+            to_plot.set_ylim([-0.55, 1.5])
+            
+            return imgs
+
+        # set imgs
+        cart_x, cart_y, pole_x, pole_y = \
+            self._plot_cartpole(history_x[i])
+        
+        to_plot["cart"].set_data(cart_x, cart_y)
+        to_plot["pole"].set_data(pole_x, pole_y)
+        to_plot["center"].set_data(history_x[i][0], 0.)
+        
+    def _plot_cartpole(self, curr_x):
+        """ plot cartpole fucntions
+
+        Args:
+            curr_x (numpy.ndarray): current catpole state
+        Returns:
+            cart_x (numpy.ndarray): x data of cart
+            cart_y (numpy.ndarray): y data of cart 
+            pole_x (numpy.ndarray): x data of pole 
+            pole_y (numpy.ndarray): y data of pole 
+        """
+        # cart
+        cart_x, cart_y = square(curr_x[0], 0.,\
+                                self.config["cart_size"], 0.)
+    
+        # pole    
+        pole_x = np.array([curr_x[0], curr_x[0] + self.config["l"] \
+                                      * np.cos(curr_x[2]-np.pi/2)])
+        pole_y = np.array([0., self.config["l"] \
+                               * np.sin(curr_x[2]-np.pi/2)])
+
+        return cart_x, cart_y, pole_x, pole_y

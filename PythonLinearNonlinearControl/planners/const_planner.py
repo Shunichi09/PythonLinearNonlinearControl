@@ -1,7 +1,7 @@
 import numpy as np
 from .planner import Planner
 
-class ConstantPlanner():
+class ConstantPlanner(Planner):
     """ This planner make constant goal state
     """
     def __init__(self, config):

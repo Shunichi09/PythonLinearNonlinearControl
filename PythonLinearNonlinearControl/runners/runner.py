@@ -29,7 +29,7 @@ class ExpRunner():
         while not done:
             logger.debug("Step = {}".format(step_count))
             # plan
-            g_xs = planner.plan(curr_x, g_x=info["goal_state"])
+            g_xs = planner.plan(curr_x, info["goal_state"])
 
             # obtain sol
             u = controller.obtain_sol(curr_x, g_xs)
