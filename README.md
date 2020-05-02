@@ -6,7 +6,7 @@
 # PythonLinearNonLinearControl
 
 PythonLinearNonLinearControl is a library implementing the linear and nonlinear control theories in python.
-Due to use only basic libralies (scipy, numpy), this library is also easily to extend for your own situations.
+Due to use only basic libralies (scipy, numpy), this library is  to extend for your own situations.
 
 <div><img src="assets/concept.png" width="500"/></div>
 
