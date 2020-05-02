@@ -1,5 +1,6 @@
 from .first_order_lag import FirstOrderLagEnv
 from .two_wheeled import TwoWheeledConstEnv
+from .two_wheeled import TwoWheeledTrackEnv
 from .cartpole import CartPoleEnv
 
 def make_env(args):
@@ -8,6 +9,8 @@ def make_env(args):
         return FirstOrderLagEnv()
     elif args.env == "TwoWheeledConst":
         return TwoWheeledConstEnv()
+    elif args.env == "TwoWheeledTrack":
+        return TwoWheeledTrackEnv()
     elif args.env == "CartPole":
         return CartPoleEnv()
     

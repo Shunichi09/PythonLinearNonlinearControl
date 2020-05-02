@@ -9,7 +9,7 @@ def make_config(args):
     """
     if args.env == "FirstOrderLag":
         return FirstOrderLagConfigModule()
-    elif args.env == "TwoWheeledConst" or args.env == "TwoWheeled":
+    elif args.env == "TwoWheeledConst" or args.env == "TwoWheeledTrack":
         return TwoWheeledConfigModule()
     elif args.env == "CartPole":
         return CartPoleConfigModule()

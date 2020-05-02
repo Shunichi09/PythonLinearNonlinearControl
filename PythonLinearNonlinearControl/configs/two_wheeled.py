@@ -1,21 +1,37 @@
 import numpy as np
+from matplotlib.axes import Axes
+
+from ..plotters.plot_objs import square_with_angle, square
+from ..common.utils import fit_angle_in_range
 
 class TwoWheeledConfigModule():
     # parameters
     ENV_NAME = "TwoWheeled-v0"
     TYPE = "Nonlinear"
+    N_AHEAD = 1
     TASK_HORIZON = 1000
     PRED_LEN = 20
     STATE_SIZE = 3
     INPUT_SIZE = 2
     DT = 0.01
     # cost parameters
+    # for Const goal
+    """
     R = np.diag([0.1, 0.1])
     Q = np.diag([1., 1., 0.01])
     Sf = np.diag([5., 5., 1.])
+    """
+    # for track goal
+    R = np.diag([0.01, 0.01])
+    Q = np.diag([2.5, 2.5, 0.01])
+    Sf = np.diag([2.5, 2.5, 0.01])
+    
     # bounds
-    INPUT_LOWER_BOUND = np.array([-1.5, 3.14])
+    INPUT_LOWER_BOUND = np.array([-1.5, -3.14])
     INPUT_UPPER_BOUND = np.array([1.5, 3.14])
+    # parameters
+    CAR_SIZE = 0.2
+    WHEELE_SIZE = (0.075, 0.015)
 
     def __init__(self):
         """ 
@@ -79,6 +95,27 @@ class TwoWheeledConfigModule():
         return (u**2) * np.diag(TwoWheeledConfigModule.R)
     
     @staticmethod
+    def fit_diff_in_range(diff_x):
+        """ fit difference state in range(angle)
+
+        Args:
+            diff_x (numpy.ndarray): 
+                shape(pop_size, pred_len, state_size) or
+                shape(pred_len, state_size) or
+                shape(state_size, )
+        Returns:
+            fitted_diff_x (numpy.ndarray): same shape as diff_x
+        """
+        if len(diff_x.shape) == 3:
+            diff_x[:, :, -1] = fit_angle_in_range(diff_x[:, :, -1]) 
+        elif len(diff_x.shape) == 2:
+            diff_x[:, -1] = fit_angle_in_range(diff_x[:, -1])
+        elif len(diff_x.shape) == 1:
+            diff_x[-1] = fit_angle_in_range(diff_x[-1])
+
+        return diff_x
+
+    @staticmethod
     def state_cost_fn(x, g_x):
         """ state cost function
         Args:
@@ -90,7 +127,8 @@ class TwoWheeledConfigModule():
             cost (numpy.ndarray): cost of state, shape(pred_len, state_size) or
                 shape(pop_size, pred_len, state_size)
         """
-        return ((x - g_x)**2) * np.diag(TwoWheeledConfigModule.Q)
+        diff = TwoWheeledConfigModule.fit_diff_in_range(x - g_x)
+        return ((diff)**2) * np.diag(TwoWheeledConfigModule.Q)
 
     @staticmethod
     def terminal_state_cost_fn(terminal_x, terminal_g_x):
@@ -104,8 +142,10 @@ class TwoWheeledConfigModule():
             cost (numpy.ndarray): cost of state, shape(pred_len, ) or
                 shape(pop_size, pred_len)
         """
-        return ((terminal_x - terminal_g_x)**2) \
-                * np.diag(TwoWheeledConfigModule.Sf)
+        terminal_diff = TwoWheeledConfigModule.fit_diff_in_range(terminal_x \
+                                                        - terminal_g_x)
+        
+        return ((terminal_diff)**2) * np.diag(TwoWheeledConfigModule.Sf)
     
     @staticmethod
     def gradient_cost_fn_with_state(x, g_x, terminal=False):
@@ -119,10 +159,12 @@ class TwoWheeledConfigModule():
             l_x (numpy.ndarray): gradient of cost, shape(pred_len, state_size)
                 or shape(1, state_size)
         """
-        if not terminal:
-            return 2. * (x - g_x) * np.diag(TwoWheeledConfigModule.Q)
+        diff = TwoWheeledConfigModule.fit_diff_in_range(x - g_x)
         
-        return (2. * (x - g_x) \
+        if not terminal:
+            return 2. * (diff) * np.diag(TwoWheeledConfigModule.Q)
+        
+        return (2. * (diff) \
             * np.diag(TwoWheeledConfigModule.Sf))[np.newaxis, :]
 
     @staticmethod

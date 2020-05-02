@@ -22,3 +22,5 @@ def make_controller(args, config, model):
         return iLQR(config, model)
     elif args.controller_type == "DDP":
         return DDP(config, model)
+    
+    raise ValueError("No controller: {}".format(args.controller_type))

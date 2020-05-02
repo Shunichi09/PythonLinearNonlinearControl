@@ -1,8 +1,9 @@
 import numpy as np
 
 class Env():
-    """
+    """ Environments class
     Attributes:
+    
         curr_x (numpy.ndarray): current state 
         history_x (list[numpy.ndarray]): historty of state, shape(step_count*state_size)
         step_count (int): step count
@@ -48,7 +49,7 @@ class Env():
         """
         raise NotImplementedError("Implement step function")
 
-    def __str__(self):
+    def __repr__(self):
         """
         """
         return self.config
