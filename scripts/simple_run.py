@@ -37,8 +37,8 @@ def run(args):
     history_x, history_u, history_g = runner.run(env, controller, planner) 
 
     # plot results
-    plot_results(args, history_x, history_u, history_g=history_g)
-    save_plot_data(args, history_x, history_u, history_g=history_g)
+    plot_results(history_x, history_u, history_g=history_g, args=args)
+    save_plot_data(history_x, history_u, history_g=history_g, args=args)
 
     if args.save_anim:
         animator = Animator(env, args=args)

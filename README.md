@@ -178,17 +178,17 @@ Use that histories to visualize the Animation or Figures.
 
 ```py
 # plot results
-plot_results(args, history_x, history_u, history_g=history_g)
-save_plot_data(args, history_x, history_u, history_g=history_g)
+plot_results(history_x, history_u, history_g=history_g)
+save_plot_data(history_x, history_u, history_g=history_g)
 
 # create animation
-animator = Animator(args, env)
+animator = Animator(env)
 animator.draw(history_x, history_g)
 ```
 
-## Run Experiments
+## Run Example Script
 
-You can run the experiments as follows:
+You can run the example script as follows:
 
 ```
 python scripts/simple_run.py --env CartPole --controller CEM --save_anim 1

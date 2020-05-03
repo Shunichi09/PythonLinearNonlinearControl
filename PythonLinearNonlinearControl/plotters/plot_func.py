@@ -47,7 +47,7 @@ def plot_result(history, history_g=None, ylabel="x",
         axis1.legend(ncol=1, bbox_to_anchor=(0., 1.02, 1., 0.102), loc=3)
         figure.savefig(path, bbox_inches="tight", pad_inches=0.05)
 
-def plot_results(args, history_x, history_u, history_g=None):
+def plot_results(history_x, history_u, history_g=None, args=None):
     """
 
     Args:
@@ -56,14 +56,21 @@ def plot_results(args, history_x, history_u, history_g=None):
     Returns:
         None
     """
-    plot_result(history_x, history_g=history_g, ylabel="x",
-                name= args.env + "-state_history",
-                save_dir="./result/" + args.controller_type)
-    plot_result(history_u, history_g=np.zeros_like(history_u), ylabel="u",
-                name= args.env + "-input_history",
-                save_dir="./result/" + args.controller_type)
+    env = "Env"
+    controller_type = "controller"
 
-def save_plot_data(args, history_x, history_u, history_g=None):
+    if args is not None:
+        env = args.env
+        controller_type = args.controller_type
+
+    plot_result(history_x, history_g=history_g, ylabel="x",
+                name= env + "-state_history",
+                save_dir="./result/" + controller_type)
+    plot_result(history_u, history_g=np.zeros_like(history_u), ylabel="u",
+                name= env + "-input_history",
+                save_dir="./result/" + controller_type)
+
+def save_plot_data(history_x, history_u, history_g=None, args=None):
     """ save plot data
 
     Args:
@@ -72,16 +79,23 @@ def save_plot_data(args, history_x, history_u, history_g=None):
     Returns:
         None
     """
-    path = os.path.join("./result/" + args.controller_type,
-                        args.env + "-history_x.pkl")
+    env = "Env"
+    controller_type = "controller"
+
+    if args is not None:
+        env = args.env
+        controller_type = args.controller_type
+
+    path = os.path.join("./result/" + controller_type,
+                        env + "-history_x.pkl")
     save_pickle(path, history_x)
 
-    path = os.path.join("./result/" + args.controller_type,
-                        args.env + "-history_u.pkl")
+    path = os.path.join("./result/" + controller_type,
+                        env + "-history_u.pkl")
     save_pickle(path, history_u)
 
-    path = os.path.join("./result/" + args.controller_type,
-                        args.env + "-history_g.pkl")
+    path = os.path.join("./result/" + controller_type,
+                        env + "-history_g.pkl")
     save_pickle(path, history_g)
 
 def load_plot_data(env, controller_type, result_dir="./result"):
