@@ -10,12 +10,17 @@ logger = getLogger(__name__)
 class Animator():
     """ animation class
     """
-    def __init__(self, args, env):
+    def __init__(self, env, args=None):
         """
         """
-        self.env_name = args.env
-        self.result_dir = args.result_dir
-        self.controller_type = args.controller_type
+        self.env_name = "Env"
+        self.result_dir = "./result"
+        self.controller_type = "controller"
+
+        if args is not None:
+            self.env_name = args.env
+            self.result_dir = args.result_dir
+            self.controller_type = args.controller_type
 
         self.interval = env.config["dt"] * 1000.  # to ms
         self.plot_func = env.plot_func

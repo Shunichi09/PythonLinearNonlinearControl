@@ -41,7 +41,7 @@ def run(args):
     save_plot_data(args, history_x, history_u, history_g=history_g)
 
     if args.save_anim:
-        animator = Animator(args, env)
+        animator = Animator(env, args=args)
         animator.draw(history_x, history_g)
 
 def main():

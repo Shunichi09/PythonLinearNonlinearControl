@@ -3,9 +3,9 @@
 [![GitHub issues open](https://img.shields.io/github/issues/Shunichi09/PythonLinearNonlinearControl.svg)]()
 [![Build Status](https://travis-ci.org/Shunichi09/PythonLinearNonlinearControl.svg?branch=master&service=github)](https://travis-ci.org/Shunichi09/PythonLinearNonlinearControl)
 
-# PythonLinearNonLinearControl
+# PythonLinearNonlinearControl
 
-PythonLinearNonLinearControl is a library implementing the linear and nonlinear control theories in python.
+PythonLinearNonlinearControl is a library implementing the linear and nonlinear control theories in python.
 Due to use only basic libralies (scipy, numpy), this library is easy to extend for your own situations.
 
 <div><img src="assets/concept.png" width="500"/></div>
@@ -78,7 +78,7 @@ All states and inputs of environments are continuous.
 
 You could know abount our environmets more in [Environments.md](Environments.md)
 
-# Usage 
+# Installation
 
 ## To install this package
 
@@ -103,16 +103,6 @@ or
 ```
 pip install -e .
 ```
-
-## Run Experiments
-
-You can run the experiments as follows:
-
-```
-python scripts/simple_run.py --env FirstOrderLag --controller CEM
-```
-
-**figures and animations are saved in the ./result folder.**
 
 # Basic concepts
 
@@ -140,6 +130,71 @@ Controller calculate the optimal inputs by using the model by using the algorith
 Runner runs the simulation.
 
 Please, see more detail in each scripts.
+
+# Getting started
+
+## [QuickStart Guide](scripts/quickstart/quickstart.md)
+
+This is a quickstart guide for users who just want to try PythonLinearNonlinearControl.
+If you have not installed PythonLinearNonLinearControl, please see the section of "how to setup" in README.md
+
+When we design control systems, we should have Environment, Model, Planner, Controller and Runner.
+Therefore your script contains those Modules.
+
+First, import each Modules from PythonLinearNonlinearControl.
+
+```py
+from PythonLinearNonlinearControl import configs 
+from PythonLinearNonlinearControl import envs
+from PythonLinearNonlinearControl import models
+from PythonLinearNonlinearControl import planners
+from PythonLinearNonlinearControl import controllers
+from PythonLinearNonlinearControl import runners
+```
+
+Configs contains each modules configurations such as cost functions, prediction length, ...etc.
+
+Then you can make each module. (This is example about CEM and CartPole env)
+
+```py
+config = configs.CartPoleConfigModule()
+env = envs.CartPoleEnv()
+model = models.CartPoleModel(config)
+planner = controllers.CEM(config, model)
+runner = planners.ConstantPlanner(config)
+controller = runners.ExpRunner()
+```
+
+The preparation for experiment has done!
+Please run the runner.
+
+```py
+history_x, history_u, history_g = runner.run(env, controller, planner) 
+```
+
+You can get the results of history of state, history of input and history of goal.
+Use that histories to visualize the Animation or Figures.
+(Note FirstOrderEnv does not support animation)
+
+```py
+# plot results
+plot_results(args, history_x, history_u, history_g=history_g)
+save_plot_data(args, history_x, history_u, history_g=history_g)
+
+# create animation
+animator = Animator(args, env)
+animator.draw(history_x, history_g)
+```
+
+## Run Experiments
+
+You can run the experiments as follows:
+
+```
+python scripts/simple_run.py --env CartPole --controller CEM --save_anim 1
+```
+
+**figures and animations are saved in the ./result folder.**
 
 # Old version
 
