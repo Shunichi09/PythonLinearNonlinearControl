@@ -160,9 +160,9 @@ Then you can make each module. (This is example about CEM and CartPole env)
 config = configs.CartPoleConfigModule()
 env = envs.CartPoleEnv()
 model = models.CartPoleModel(config)
-planner = controllers.CEM(config, model)
-runner = planners.ConstantPlanner(config)
-controller = runners.ExpRunner()
+controller = controllers.CEM(config, model)
+planner = planners.ConstantPlanner(config)
+runner = runners.ExpRunner()
 ```
 
 The preparation for experiment has done!
