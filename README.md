@@ -1,4 +1,3 @@
-[![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Coverage Status](https://coveralls.io/repos/github/Shunichi09/PythonLinearNonlinearControl/badge.svg?branch=master&service=github)](https://coveralls.io/github/Shunichi09/PythonLinearNonlinearControl?branch=master&service=github)
 [![GitHub issues open](https://img.shields.io/github/issues/Shunichi09/PythonLinearNonlinearControl.svg)]()
 [![Build Status](https://travis-ci.org/Shunichi09/PythonLinearNonlinearControl.svg?branch=master&service=github)](https://travis-ci.org/Shunichi09/PythonLinearNonlinearControl)
@@ -213,7 +212,14 @@ Coming soon !!
 
 # License
 
-[MIT License](LICENSE).
+PythonLinearNonlinearControl is licensed under the MIT License. However, some scripts are available under different license terms. See below.
+
+The following parts are licensed under GPL3+:
+
+- [ilqr](PythonLinearNonlinearControl/controllers/ilqr.py)
+- [ddp](PythonLinearNonlinearControl/controllers/ddp.py)
+
+See the [licenses folder](./licenses) for the full text of the licenses.
 
 # Citation
 
