@@ -4,6 +4,7 @@ from logging import getLogger
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+import matplotlib.animation as animation
 
 logger = getLogger(__name__)
 
@@ -66,14 +67,18 @@ class Animator():
         self._setup()
         _update_img = lambda i: self._update_img(i, history_x, history_g_x)
 
+        # Set up formatting for the movie files
+        Writer = animation.writers['ffmpeg']
+        writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
+        
         # call funcanimation
-        animation = FuncAnimation(
+        ani = FuncAnimation(
             self.anim_fig,
             _update_img, interval=self.interval, frames=len(history_x)-1)
 
         # save animation
         path = os.path.join(self.result_dir, self.controller_type,
                             "animation-" + self.env_name + ".mp4")
-        logger.info("Saved Animation to {} ...".format(path))
-        
-        animation.save(path, writer="ffmpeg")
+        logger.info("Saved Animation to {} ...".format(path))        
+
+        ani.save(path, writer=writer)
