@@ -12,6 +12,9 @@ class TwoWheeledModel(Model):
         """
         super(TwoWheeledModel, self).__init__()
         self.dt = config.DT
+        self.gradient_hamiltonian_state = config.gradient_hamiltonian_state
+        self.gradient_hamiltonian_input = config.gradient_hamiltonian_input
+        self.gradient_cost_fn_with_state = config.gradient_cost_fn_with_state
 
     def predict_next_state(self, curr_x, u):
         """ predict next state
@@ -52,6 +55,42 @@ class TwoWheeledModel(Model):
             next_x = x_dot[:, :, 0] * self.dt + curr_x
 
             return next_x
+
+    def predict_adjoint_state(self, lam, x, u, g_x=None, t=None):
+        """ predict adjoint states
+
+        Args:
+            lam (numpy.ndarray): adjoint state, shape(state_size, )
+            x (numpy.ndarray): state, shape(state_size, )
+            u (numpy.ndarray): input, shape(input_size, )
+            goal (numpy.ndarray): goal state, shape(state_size, )
+        Returns:
+            prev_lam (numpy.ndarrya): previous adjoint state,
+                shape(state_size, )
+        """
+        if len(u.shape) == 1:
+            delta_lam = self.dt * \
+                self.gradient_hamiltonian_state(x, lam, u, g_x)
+            prev_lam = lam + delta_lam
+            return prev_lam
+
+        elif len(u.shape) == 2:
+            raise ValueError
+
+    def predict_terminal_adjoint_state(self, terminal_x, terminal_g_x=None):
+        """ predict terminal adjoint state
+
+        Args:
+            terminal_x (numpy.ndarray): terminal state, shape(state_size, )
+            terminal_g_x (numpy.ndarray): terminal goal state,
+                shape(state_size, )
+        Returns:
+            terminal_lam (numpy.ndarray): terminal adjoint state,
+                shape(state_size, )
+        """
+        terminal_lam = self.gradient_cost_fn_with_state(
+            terminal_x, terminal_g_x, terminal=True)  # return in shape[1, state_size]
+        return terminal_lam[0]
 
     @staticmethod
     def calc_f_x(xs, us, dt):

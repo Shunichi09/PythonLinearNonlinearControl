@@ -40,7 +40,7 @@ class DDP(Controller):
             config.hessian_cost_fn_with_input_state
 
         # controller parameters
-        self.max_iter = config.opt_config["DDP"]["max_iter"]
+        self.max_iters = config.opt_config["DDP"]["max_iters"]
         self.init_mu = config.opt_config["DDP"]["init_mu"]
         self.mu = self.init_mu
         self.mu_min = config.opt_config["DDP"]["mu_min"]
@@ -88,7 +88,7 @@ class DDP(Controller):
         # line search param
         alphas = 1.1**(-np.arange(10)**2)
 
-        while opt_count < self.max_iter:
+        while opt_count < self.max_iters:
             accepted_sol = False
 
             # forward

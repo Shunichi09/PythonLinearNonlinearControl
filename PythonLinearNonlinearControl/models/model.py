@@ -97,6 +97,9 @@ class Model():
         Returns:
             lams (numpy.ndarray): adjoint state, shape(pred_len, state_size),
                 adjoint size is the same as state_size
+        Notes:
+            Adjoint trajectory be computed by backward path.
+            Usually, we should -\dot{lam} but in backward path case, we can use \dot{lam} directry 
         """
         # get size
         (pred_len, input_size) = us.shape
@@ -108,21 +111,21 @@ class Model():
         for t in range(pred_len-1, 0, -1):
             prev_lam = \
                 self.predict_adjoint_state(lam, xs[t], us[t],
-                                           goal=g_xs[t], t=t)
+                                           g_x=g_xs[t], t=t)
             # update
             lams = np.concatenate((prev_lam[np.newaxis, :], lams), axis=0)
             lam = prev_lam
 
         return lams
 
-    def predict_adjoint_state(self, lam, x, u, goal=None, t=None):
+    def predict_adjoint_state(self, lam, x, u, g_x=None, t=None):
         """ predict adjoint states
 
         Args:
             lam (numpy.ndarray): adjoint state, shape(state_size, )
             x (numpy.ndarray): state, shape(state_size, )
             u (numpy.ndarray): input, shape(input_size, )
-            goal (numpy.ndarray): goal state, shape(state_size, )
+            g_x (numpy.ndarray): goal state, shape(state_size, )
         Returns:
             prev_lam (numpy.ndarrya): previous adjoint state,
                 shape(state_size, )

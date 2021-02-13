@@ -58,7 +58,9 @@ class TwoWheeledConstEnv(Env):
         """
         self.step_count = 0
 
-        self.curr_x = np.zeros(self.config["state_size"])
+        noise = np.clip(np.random.randn(3), -0.1, 0.1)
+        noise *= 0.01
+        self.curr_x = np.zeros(self.config["state_size"]) + noise
 
         if init_x is not None:
             self.curr_x = init_x
@@ -252,7 +254,9 @@ class TwoWheeledTrackEnv(Env):
         """
         self.step_count = 0
 
-        self.curr_x = np.zeros(self.config["state_size"])
+        noise = np.clip(np.random.randn(3), -0.1, 0.1)
+        noise *= 0.01
+        self.curr_x = np.zeros(self.config["state_size"]) + noise
 
         if init_x is not None:
             self.curr_x = init_x
