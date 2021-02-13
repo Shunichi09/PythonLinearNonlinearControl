@@ -53,7 +53,7 @@ Following algorithms are implemented in PythonLinearNonlinearControl
     - [script](PythonLinearNonlinearControl/controllers/ddp.py)
 - [Unconstrained Nonlinear Model Predictive Control (NMPC)](https://www.sciencedirect.com/science/article/pii/S0005109897000058)
   - Ref: Ohtsuka, T., & Fujii, H. A. (1997). Real-time optimization algorithm for nonlinear receding-horizon control. Automatica, 33(6), 1147-1154.
-    - [script (Coming soon)]()
+    - [script](PythonLinearNonlinearControl/controllers/nmpc.py)
 - [Constrained Nonlinear Model Predictive Control -CGMRES- (NMPC-CGMRES)](https://www.sciencedirect.com/science/article/pii/S0005109897000058)
   - Ref: Ohtsuka, T., & Fujii, H. A. (1997). Real-time optimization algorithm for nonlinear receding-horizon control. Automatica, 33(6), 1147-1154.
     - [script (Coming soon)]()
@@ -185,6 +185,8 @@ save_plot_data(history_x, history_u, history_g=history_g)
 animator = Animator(env)
 animator.draw(history_x, history_g)
 ```
+**It should be noted that the controller parameters like Q, R and Sf strongly affect the performence of the controller.
+Please, check these parameters before you run the simulation.**
 
 ## Run Example Script
 
