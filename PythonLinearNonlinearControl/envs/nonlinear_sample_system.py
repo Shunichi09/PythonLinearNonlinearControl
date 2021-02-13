@@ -5,7 +5,7 @@ from .env import Env
 from ..common.utils import update_state_with_Runge_Kutta
 
 
-class NonlinearSampleEnv(Env):
+class NonlinearSampleSystemEnv(Env):
     """ Nonlinear Sample Env
     """
 
@@ -15,12 +15,12 @@ class NonlinearSampleEnv(Env):
         self.config = {"state_size": 2,
                        "input_size": 1,
                        "dt": 0.01,
-                       "max_step": 250,
+                       "max_step": 2000,
                        "input_lower_bound": [-0.5],
                        "input_upper_bound": [0.5],
                        }
 
-        super(NonlinearSampleEnv, self).__init__(self.config)
+        super(NonlinearSampleSystemEnv, self).__init__(self.config)
 
     def reset(self, init_x=np.array([2., 0.])):
         """ reset state
@@ -62,7 +62,8 @@ class NonlinearSampleEnv(Env):
         functions = [self._func_x_1, self._func_x_2]
 
         next_x = update_state_with_Runge_Kutta(self.curr_x, u,
-                                               functions, self.config["dt"])
+                                               functions, self.config["dt"],
+                                               batch=False)
 
         # cost
         cost = 0
@@ -83,18 +84,14 @@ class NonlinearSampleEnv(Env):
             {"goal_state": self.g_x}
 
     def _func_x_1(self, x, u):
-        """
-        """
         x_dot = x[1]
         return x_dot
 
     def _func_x_2(self, x, u):
-        """
-        """
-        x_dot = (1. - x[0]**2 - x[1]**2) * x[1] - x[0] + u
+        x_dot = (1. - x[0]**2 - x[1]**2) * x[1] - x[0] + u[0]
         return x_dot
 
     def plot_func(self, to_plot, i=None, history_x=None, history_g_x=None):
         """
         """
-        raise ValueError("NonlinearSampleEnv does not have animation")
+        raise ValueError("NonlinearSampleSystemEnv does not have animation")

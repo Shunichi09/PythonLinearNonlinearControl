@@ -91,17 +91,17 @@ def update_state_with_Runge_Kutta(state, u, functions, dt=0.01, batch=True):
         for i, func in enumerate(functions):
             k3[i] = dt * func(state + k2, u)
 
-        return (k0 + 2. * k1 + 2. * k2 + k3) / 6.
+        return state + (k0 + 2. * k1 + 2. * k2 + k3) / 6.
 
     else:
         batch_size, state_size = state.shape
         assert state_size == len(functions), \
             "Invalid functions length, You need to give the state size functions"
 
-        k0 = np.zeros(batch_size, state_size)
-        k1 = np.zeros(batch_size, state_size)
-        k2 = np.zeros(batch_size, state_size)
-        k3 = np.zeros(batch_size, state_size)
+        k0 = np.zeros((batch_size, state_size))
+        k1 = np.zeros((batch_size, state_size))
+        k2 = np.zeros((batch_size, state_size))
+        k3 = np.zeros((batch_size, state_size))
 
         for i, func in enumerate(functions):
             k0[:, i] = dt * func(state, u)
@@ -115,4 +115,4 @@ def update_state_with_Runge_Kutta(state, u, functions, dt=0.01, batch=True):
         for i, func in enumerate(functions):
             k3[:, i] = dt * func(state + k2, u)
 
-        return (k0 + 2. * k1 + 2. * k2 + k3) / 6.
+        return state + (k0 + 2. * k1 + 2. * k2 + k3) / 6.
