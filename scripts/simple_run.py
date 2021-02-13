@@ -13,31 +13,22 @@ from PythonLinearNonlinearControl.plotters.animator import Animator
 
 
 def run(args):
-    # logger
     make_logger(args.result_dir)
 
-    # make envs
     env = make_env(args)
 
-    # make config
     config = make_config(args)
 
-    # make planner
     planner = make_planner(args, config)
 
-    # make model
     model = make_model(args, config)
 
-    # make controller
     controller = make_controller(args, config, model)
 
-    # make simulator
     runner = make_runner(args)
 
-    # run experiment
     history_x, history_u, history_g = runner.run(env, controller, planner)
 
-    # plot results
     plot_results(history_x, history_u, history_g=history_g, args=args)
     save_plot_data(history_x, history_u, history_g=history_g, args=args)
 
@@ -49,8 +40,8 @@ def run(args):
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--controller_type", type=str, default="DDP")
-    parser.add_argument("--env", type=str, default="NonlinearSample")
+    parser.add_argument("--controller_type", type=str, default="NMPC")
+    parser.add_argument("--env", type=str, default="TwoWheeledTrack")
     parser.add_argument("--save_anim", type=bool_flag, default=0)
     parser.add_argument("--result_dir", type=str, default="./result")
 

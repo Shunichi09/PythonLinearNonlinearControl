@@ -52,7 +52,7 @@ class FirstOrderLagConfigModule():
             "MPC": {
             },
             "iLQR": {
-                "max_iter": 500,
+                "max_iters": 500,
                 "init_mu": 1.,
                 "mu_min": 1e-6,
                 "mu_max": 1e10,
@@ -60,7 +60,7 @@ class FirstOrderLagConfigModule():
                 "threshold": 1e-6,
             },
             "DDP": {
-                "max_iter": 500,
+                "max_iters": 500,
                 "init_mu": 1.,
                 "mu_min": 1e-6,
                 "mu_max": 1e10,

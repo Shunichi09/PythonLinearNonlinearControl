@@ -23,9 +23,15 @@ class TwoWheeledConfigModule():
     Sf = np.diag([5., 5., 1.])
     """
     # for track goal
+    """
     R = np.diag([0.01, 0.01])
     Q = np.diag([2.5, 2.5, 0.01])
     Sf = np.diag([2.5, 2.5, 0.01])
+    """
+    # for track goal to NMPC
+    R = np.diag([0.1, 0.1])
+    Q = np.diag([0.1, 0.1, 0.1])
+    Sf = np.diag([0.25, 0.25, 0.25])
 
     # bounds
     INPUT_LOWER_BOUND = np.array([-1.5, -3.14])
@@ -62,7 +68,7 @@ class TwoWheeledConfigModule():
                 "noise_sigma": 1.,
             },
             "iLQR": {
-                "max_iter": 500,
+                "max_iters": 500,
                 "init_mu": 1.,
                 "mu_min": 1e-6,
                 "mu_max": 1e10,
@@ -70,12 +76,17 @@ class TwoWheeledConfigModule():
                 "threshold": 1e-6,
             },
             "DDP": {
-                "max_iter": 500,
+                "max_iters": 500,
                 "init_mu": 1.,
                 "mu_min": 1e-6,
                 "mu_max": 1e10,
                 "init_delta": 2.,
                 "threshold": 1e-6,
+            },
+            "NMPC": {
+                "threshold": 1e-3,
+                "max_iters": 1000,
+                "learning_rate": 0.1
             },
             "NMPC-CGMRES": {
             },
@@ -232,3 +243,86 @@ class TwoWheeledConfigModule():
         (pred_len, input_size) = u.shape
 
         return np.zeros((pred_len, input_size, state_size))
+
+    @staticmethod
+    def gradient_hamiltonian_input(x, lam, u, g_x):
+        """
+
+        Args:
+            x (numpy.ndarray): shape(pred_len+1, state_size)
+            lam (numpy.ndarray): shape(pred_len, state_size)
+            u (numpy.ndarray): shape(pred_len, input_size)
+            g_xs (numpy.ndarray): shape(pred_len, state_size)
+
+        Returns:
+            F (numpy.ndarray), shape(pred_len, input_size)
+        """
+        if len(x.shape) == 1:
+            input_size = u.shape[0]
+            F = np.zeros(input_size)
+            F[0] = u[0] * TwoWheeledConfigModule.R[0, 0] + \
+                lam[0] * np.cos(x[2]) + lam[1] * np.sin(x[2])
+            F[1] = u[1] * TwoWheeledConfigModule.R[1, 1] + lam[2]
+
+            return F
+
+        elif len(x.shape) == 2:
+            pred_len, input_size = u.shape
+            F = np.zeros((pred_len, input_size))
+
+            for i in range(pred_len):
+                F[i, 0] = u[i, 0] * TwoWheeledConfigModule.R[0, 0] + \
+                    lam[i, 0] * np.cos(x[i, 2]) + lam[i, 1] * np.sin(x[i, 2])
+                F[i, 1] = u[i, 1] * TwoWheeledConfigModule.R[1, 1] + lam[i, 2]
+
+            return F
+        else:
+            raise NotImplementedError
+
+    @staticmethod
+    def gradient_hamiltonian_state(x, lam, u, g_x):
+        """
+        Args:
+            x (numpy.ndarray): shape(pred_len+1, state_size)
+            lam (numpy.ndarray): shape(pred_len, state_size)
+            u (numpy.ndarray): shape(pred_len, input_size)
+            g_xs (numpy.ndarray): shape(pred_len, state_size)
+
+        Returns:
+            lam_dot (numpy.ndarray), shape(state_size, )
+        """
+        if len(lam.shape) == 1:
+            state_size = lam.shape[0]
+            lam_dot = np.zeros(state_size)
+            lam_dot[0] = \
+                (x[0] - g_x[0]) * TwoWheeledConfigModule.Q[0, 0]
+            lam_dot[1] = \
+                (x[1] - g_x[1]) * TwoWheeledConfigModule.Q[1, 1]
+
+            relative_angle = fit_angle_in_range(x[2] - g_x[2])
+            lam_dot[2] = \
+                relative_angle * TwoWheeledConfigModule.Q[2, 2] \
+                - lam[0] * u[0] * np.sin(x[2]) \
+                + lam[1] * u[0] * np.cos(x[2])
+
+            return lam_dot
+
+        elif len(lam.shape) == 2:
+            pred_len, state_size = lam.shape
+            lam_dot = np.zeros((pred_len, state_size))
+
+            for i in range(pred_len):
+                lam_dot[i, 0] = \
+                    (x[i, 0] - g_x[i, 0]) * TwoWheeledConfigModule.Q[0, 0]
+                lam_dot[i, 1] = \
+                    (x[i, 1] - g_x[i, 1]) * TwoWheeledConfigModule.Q[1, 1]
+
+                relative_angle = fit_angle_in_range(x[i, 2] - g_x[i, 2])
+                lam_dot[i, 2] = \
+                    relative_angle * TwoWheeledConfigModule.Q[2, 2] \
+                    - lam[i, 0] * u[i, 0] * np.sin(x[i, 2]) \
+                    + lam[i, 1] * u[i, 0] * np.cos(x[i, 2])
+
+            return lam_dot
+        else:
+            raise NotImplementedError

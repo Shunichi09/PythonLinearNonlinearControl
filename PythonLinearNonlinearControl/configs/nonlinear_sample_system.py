@@ -6,12 +6,12 @@ class NonlinearSampleSystemConfigModule():
     ENV_NAME = "NonlinearSampleSystem-v0"
     PLANNER_TYPE = "Const"
     TYPE = "Nonlinear"
-    TASK_HORIZON = 2500
+    TASK_HORIZON = 2000
     PRED_LEN = 10
     STATE_SIZE = 2
     INPUT_SIZE = 1
     DT = 0.01
-    R = np.diag([0.01])
+    R = np.diag([1.])
     Q = None
     Sf = None
     # bounds
@@ -46,7 +46,7 @@ class NonlinearSampleSystemConfigModule():
                 "noise_sigma": 0.9,
             },
             "iLQR": {
-                "max_iter": 500,
+                "max_iters": 500,
                 "init_mu": 1.,
                 "mu_min": 1e-6,
                 "mu_max": 1e10,
@@ -54,16 +54,25 @@ class NonlinearSampleSystemConfigModule():
                 "threshold": 1e-6,
             },
             "DDP": {
-                "max_iter": 500,
+                "max_iters": 500,
                 "init_mu": 1.,
                 "mu_min": 1e-6,
                 "mu_max": 1e10,
                 "init_delta": 2.,
                 "threshold": 1e-6,
             },
+            "NMPC": {
+                "threshold": 1e-5,
+                "max_iters": 1000,
+                "learning_rate": 0.1
+            },
             "NMPC-CGMRES": {
+                "threshold": 1e-3
             },
             "NMPC-Newton": {
+                "threshold": 1e-3,
+                "max_iteration": 500,
+                "learning_rate": 1e-3
             },
         }
 
@@ -103,7 +112,7 @@ class NonlinearSampleSystemConfigModule():
 
         return 0.5 * (x[0]**2) + 0.5 * (x[1]**2)
 
-    @ staticmethod
+    @staticmethod
     def terminal_state_cost_fn(terminal_x, terminal_g_x):
         """
 
@@ -123,7 +132,7 @@ class NonlinearSampleSystemConfigModule():
 
         return 0.5 * (terminal_x[0]**2) + 0.5 * (terminal_x[1]**2)
 
-    @ staticmethod
+    @staticmethod
     def gradient_cost_fn_with_state(x, g_x, terminal=False):
         """ gradient of costs with respect to the state
 
@@ -147,7 +156,7 @@ class NonlinearSampleSystemConfigModule():
 
         return cost_dx
 
-    @ staticmethod
+    @staticmethod
     def gradient_cost_fn_with_input(x, u):
         """ gradient of costs with respect to the input
 
@@ -159,7 +168,7 @@ class NonlinearSampleSystemConfigModule():
         """
         return 2. * u * np.diag(NonlinearSampleSystemConfigModule.R)
 
-    @ staticmethod
+    @staticmethod
     def hessian_cost_fn_with_state(x, g_x, terminal=False):
         """ hessian costs with respect to the state
 
@@ -187,7 +196,7 @@ class NonlinearSampleSystemConfigModule():
 
         return hessian[np.newaxis, :, :]
 
-    @ staticmethod
+    @staticmethod
     def hessian_cost_fn_with_input(x, u):
         """ hessian costs with respect to the input
 
@@ -202,7 +211,7 @@ class NonlinearSampleSystemConfigModule():
 
         return np.tile(NonlinearSampleSystemConfigModule.R, (pred_len, 1, 1))
 
-    @ staticmethod
+    @staticmethod
     def hessian_cost_fn_with_input_state(x, u):
         """ hessian costs with respect to the state and input
 
@@ -217,3 +226,71 @@ class NonlinearSampleSystemConfigModule():
         (pred_len, input_size) = u.shape
 
         return np.zeros((pred_len, input_size, state_size))
+
+    @staticmethod
+    def gradient_hamiltonian_input(x, lam, u, g_x):
+        """
+
+        Args:
+            x (numpy.ndarray): shape(pred_len+1, state_size)
+            lam (numpy.ndarray): shape(pred_len, state_size)
+            u (numpy.ndarray): shape(pred_len, input_size)
+            g_xs (numpy.ndarray): shape(pred_len, state_size)
+
+        Returns:
+            F (numpy.ndarray), shape(pred_len, input_size)
+        """
+        if len(x.shape) == 1:
+            input_size = u.shape[0]
+            F = np.zeros(input_size)
+            F[0] = u[0] + lam[1]
+
+            return F
+
+        elif len(x.shape) == 2:
+            pred_len, input_size = u.shape
+            F = np.zeros((pred_len, input_size))
+
+            for i in range(pred_len):
+                F[i, 0] = u[i, 0] + lam[i, 1]
+
+            return F
+
+        else:
+            raise NotImplementedError
+
+    @staticmethod
+    def gradient_hamiltonian_state(x, lam, u, g_x):
+        """
+        Args:
+            x (numpy.ndarray): shape(pred_len+1, state_size)
+            lam (numpy.ndarray): shape(pred_len, state_size)
+            u (numpy.ndarray): shape(pred_len, input_size)
+            g_xs (numpy.ndarray): shape(pred_len, state_size)
+
+        Returns:
+            lam_dot (numpy.ndarray), shape(state_size, )
+        """
+        if len(lam.shape) == 1:
+            state_size = lam.shape[0]
+            lam_dot = np.zeros(state_size)
+            lam_dot[0] = x[0] - (2. * x[0] * x[1] + 1.) * lam[1]
+            lam_dot[1] = x[1] + lam[0] + \
+                (-3. * (x[1]**2) - x[0]**2 + 1.) * lam[1]
+
+            return lam_dot
+
+        elif len(lam.shape) == 2:
+            pred_len, state_size = lam.shape
+            lam_dot = np.zeros((pred_len, state_size))
+
+            for i in range(pred_len):
+                lam_dot[i, 0] = x[i, 0] - \
+                    (2. * x[i, 0] * x[i, 1] + 1.) * lam[i, 1]
+                lam_dot[i, 1] = x[i, 1] + lam[i, 0] + \
+                    (-3. * (x[i, 1]**2) - x[i, 0]**2 + 1.) * lam[i, 1]
+
+            return lam_dot
+
+        else:
+            raise NotImplementedError

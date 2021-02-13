@@ -38,7 +38,7 @@ class iLQR(Controller):
             config.hessian_cost_fn_with_input_state
 
         # controller parameters
-        self.max_iter = config.opt_config["iLQR"]["max_iter"]
+        self.max_iters = config.opt_config["iLQR"]["max_iters"]
         self.init_mu = config.opt_config["iLQR"]["init_mu"]
         self.mu = self.init_mu
         self.mu_min = config.opt_config["iLQR"]["mu_min"]
@@ -81,7 +81,7 @@ class iLQR(Controller):
         # line search param
         alphas = 1.1**(-np.arange(10)**2)
 
-        while opt_count < self.max_iter:
+        while opt_count < self.max_iters:
             accepted_sol = False
 
             # forward
