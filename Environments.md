@@ -6,6 +6,8 @@
 | Two wheeled System (Constant Goal) | x | ✓ | 3 | 2 | 
 | Two wheeled System (Moving Goal) (Coming soon) | x | ✓ | 3 | 2 | 
 | Cartpole (Swing up) | x | ✓ | 4 | 1 | 
+| Nonlinear Sample System Env | x | ✓ | 2 | 1 | 
+
 
 ## [FistOrderLagEnv](PythonLinearNonlinearControl/envs/first_order_lag.py)
 
@@ -54,3 +56,13 @@ mc = 1, mp = 0.2, l = 0.5, g = 9.81
 ### Cost.
 
 <img src="assets/cartpole_score.png" width="300">
+
+## [Nonlinear Sample System Env](PythonLinearNonlinearControl/envs/nonlinear_sample_system.py)
+
+## System equation.
+
+<img src="assets/nonlinear_sample_system.png" width="400">
+
+### Cost.
+
+<img src="assets/nonlinear_sample_system_score.png" width="400">

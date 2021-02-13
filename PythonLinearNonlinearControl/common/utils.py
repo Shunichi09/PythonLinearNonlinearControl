@@ -46,15 +46,16 @@ def fit_angle_in_range(angles, min_angle=-np.pi, max_angle=np.pi):
     return output.reshape(output_shape)
 
 
-def update_state_with_Runge_Kutta(state, u, functions, dt=0.01):
+def update_state_with_Runge_Kutta(state, u, functions, dt=0.01, batch=True):
     """ update state in Runge Kutta methods
     Args:
         state (array-like): state of system
         u (array-like): input of system
         functions (list): update function of each state,
-            each function will be called like func(*state, *u)
+            each function will be called like func(state, u)
             We expect that this function returns differential of each state 
         dt (float): float in seconds
+        batch (bool): state and u is given by batch or not
 
     Returns:
         next_state (np.array): next state of system
@@ -68,36 +69,50 @@ def update_state_with_Runge_Kutta(state, u, functions, dt=0.01):
 
         Note that the function return x_dot.
     """
-    state_size = len(state)
-    assert state_size == len(functions), \
-        "Invalid functions length, You need to give the state size functions"
+    if not batch:
+        state_size = len(state)
+        assert state_size == len(functions), \
+            "Invalid functions length, You need to give the state size functions"
 
-    k0 = np.zeros(state_size)
-    k1 = np.zeros(state_size)
-    k2 = np.zeros(state_size)
-    k3 = np.zeros(state_size)
+        k0 = np.zeros(state_size)
+        k1 = np.zeros(state_size)
+        k2 = np.zeros(state_size)
+        k3 = np.zeros(state_size)
 
-    inputs = np.concatenate([state, u])
+        for i, func in enumerate(functions):
+            k0[i] = dt * func(state, u)
 
-    for i, func in enumerate(functions):
-        k0[i] = dt * func(*inputs)
+        for i, func in enumerate(functions):
+            k1[i] = dt * func(state + k0 / 2., u)
 
-    add_state = state + k0 / 2.
-    inputs = np.concatenate([add_state, u])
+        for i, func in enumerate(functions):
+            k2[i] = dt * func(state + k1 / 2., u)
 
-    for i, func in enumerate(functions):
-        k1[i] = dt * func(*inputs)
+        for i, func in enumerate(functions):
+            k3[i] = dt * func(state + k2, u)
 
-    add_state = state + k1 / 2.
-    inputs = np.concatenate([add_state, u])
+        return (k0 + 2. * k1 + 2. * k2 + k3) / 6.
 
-    for i, func in enumerate(functions):
-        k2[i] = dt * func(*inputs)
+    else:
+        batch_size, state_size = state.shape
+        assert state_size == len(functions), \
+            "Invalid functions length, You need to give the state size functions"
 
-    add_state = state + k2
-    inputs = np.concatenate([add_state, u])
+        k0 = np.zeros(batch_size, state_size)
+        k1 = np.zeros(batch_size, state_size)
+        k2 = np.zeros(batch_size, state_size)
+        k3 = np.zeros(batch_size, state_size)
 
-    for i, func in enumerate(functions):
-        k3[i] = dt * func(*inputs)
+        for i, func in enumerate(functions):
+            k0[:, i] = dt * func(state, u)
 
-    return (k0 + 2. * k1 + 2. * k2 + k3) / 6.
+        for i, func in enumerate(functions):
+            k1[:, i] = dt * func(state + k0 / 2., u)
+
+        for i, func in enumerate(functions):
+            k2[:, i] = dt * func(state + k1 / 2., u)
+
+        for i, func in enumerate(functions):
+            k3[:, i] = dt * func(state + k2, u)
+
+        return (k0 + 2. * k1 + 2. * k2 + k3) / 6.

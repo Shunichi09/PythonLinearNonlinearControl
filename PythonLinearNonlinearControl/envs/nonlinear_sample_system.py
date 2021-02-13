@@ -59,9 +59,9 @@ class NonlinearSampleEnv(Env):
                     self.config["input_lower_bound"],
                     self.config["input_upper_bound"])
 
-        funtions = [self._func_x_1, self._func_x_2]
+        functions = [self._func_x_1, self._func_x_2]
 
-        next_x = update_state_with_Runge_Kutta(self._curr_x, u,
+        next_x = update_state_with_Runge_Kutta(self.curr_x, u,
                                                functions, self.config["dt"])
 
         # cost
@@ -82,16 +82,16 @@ class NonlinearSampleEnv(Env):
             self.step_count > self.config["max_step"], \
             {"goal_state": self.g_x}
 
-    def _func_x_1(self, x_1, x_2, u):
+    def _func_x_1(self, x, u):
         """
         """
-        x_dot = x_2
+        x_dot = x[1]
         return x_dot
 
-    def _func_x_2(self, x_1, x_2, u):
+    def _func_x_2(self, x, u):
         """
         """
-        x_dot = (1. - x_1**2 - x_2**2) * x_2 - x_1 + u
+        x_dot = (1. - x[0]**2 - x[1]**2) * x[1] - x[0] + u
         return x_dot
 
     def plot_func(self, to_plot, i=None, history_x=None, history_g_x=None):
