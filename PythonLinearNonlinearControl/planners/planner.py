@@ -1,8 +1,10 @@
 import numpy as np
 
+
 class Planner():
     """
     """
+
     def __init__(self):
         """
         """

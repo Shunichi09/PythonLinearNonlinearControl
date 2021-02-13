@@ -1,16 +1,17 @@
 import numpy as np
 
 from .model import Model
+from ..common.utils import update_state_with_Runge_Kutta
 
 
-class TwoWheeledModel(Model):
-    """ two wheeled model
+class NonlinearSampleSystemModel(Model):
+    """ nonlinear sample system model
     """
 
     def __init__(self, config):
         """
         """
-        super(TwoWheeledModel, self).__init__()
+        super(NonlinearSampleSystemModel, self).__init__()
         self.dt = config.DT
 
     def predict_next_state(self, curr_x, u):
@@ -26,35 +27,38 @@ class TwoWheeledModel(Model):
                 shape(pop_size, state_size)
         """
         if len(u.shape) == 1:
-            B = np.array([[np.cos(curr_x[-1]), 0.],
-                          [np.sin(curr_x[-1]), 0.],
-                          [0., 1.]])
-            # calc dot
-            x_dot = np.matmul(B, u[:, np.newaxis])
-            # next state
-            next_x = x_dot.flatten() * self.dt + curr_x
-
+            func_1 = self._func_x_1
+            func_2 = self._func_x_2
+            functions = [func_1, func_2]
+            next_x = update_state_with_Runge_Kutta(
+                curr_x, u, functions, batch=False)
             return next_x
 
         elif len(u.shape) == 2:
-            (pop_size, state_size) = curr_x.shape
-            (_, input_size) = u.shape
-            # B.shape = (pop_size, state_size, input_size)
-            B = np.zeros((pop_size, state_size, input_size))
-            # insert
-            B[:, 0, 0] = np.cos(curr_x[:, -1])
-            B[:, 1, 0] = np.sin(curr_x[:, -1])
-            B[:, 2, 1] = np.ones(pop_size)
-
-            # x_dot.shape = (pop_size, state_size, 1)
-            x_dot = np.matmul(B, u[:, :, np.newaxis])
-            # next state
-            next_x = x_dot[:, :, 0] * self.dt + curr_x
+            def func_1(xs, us): return self._func_x_1(xs, us, batch=True)
+            def func_2(xs, us): return self._func_x_2(xs, us, batch=True)
+            functions = [func_1, func_2]
+            next_x = update_state_with_Runge_Kutta(
+                curr_x, u, functions, batch=True)
 
             return next_x
 
-    @staticmethod
-    def calc_f_x(xs, us, dt):
+    def _func_x_1(self, x, u, batch=False):
+        if not batch:
+            x_dot = x[1]
+        else:
+            x_dot = x[:, 1]
+        return x_dot
+
+    def _func_x_2(self, x, u, batch=False):
+        if not batch:
+            x_dot = (1. - x[0]**2 - x[1]**2) * x[1] - x[0] + u[0]
+        else:
+            x_dot = (1. - x[:, 0]**2 - x[:, 1]**2) * \
+                x[:, 1] - x[:, 0] + u[:, 0]
+        return x_dot
+
+    def calc_f_x(self, xs, us, dt):
         """ gradient of model with respect to the state in batch form
         Args:
             xs (numpy.ndarray): state, shape(pred_len+1, state_size)
@@ -72,13 +76,14 @@ class TwoWheeledModel(Model):
         (pred_len, _) = us.shape
 
         f_x = np.zeros((pred_len, state_size, state_size))
-        f_x[:, 0, 2] = -np.sin(xs[:, 2]) * us[:, 0]
-        f_x[:, 1, 2] = np.cos(xs[:, 2]) * us[:, 0]
+        f_x[:, 0, 1] = 1.
+        f_x[:, 1, 0] = 2. * xs[:, 0] * xs[:, 1] - 1.
+        f_x[:, 1, 1] = - 2. * xs[:, 1] * xs[:, 1] + \
+            (1. - xs[:, 0]**2 - xs[:, 1]**2)
 
         return f_x * dt + np.eye(state_size)  # to discrete form
 
-    @staticmethod
-    def calc_f_u(xs, us, dt):
+    def calc_f_u(self, xs, us, dt):
         """ gradient of model with respect to the input in batch form
         Args:
             xs (numpy.ndarray): state, shape(pred_len+1, state_size)
@@ -96,14 +101,12 @@ class TwoWheeledModel(Model):
         (pred_len, input_size) = us.shape
 
         f_u = np.zeros((pred_len, state_size, input_size))
-        f_u[:, 0, 0] = np.cos(xs[:, 2])
-        f_u[:, 1, 0] = np.sin(xs[:, 2])
-        f_u[:, 2, 1] = 1.
+
+        f_u[:, 1, 0] = 1.
 
         return f_u * dt  # to discrete form
 
-    @staticmethod
-    def calc_f_xx(xs, us, dt):
+    def calc_f_xx(self, xs, us, dt):
         """ hessian of model with respect to the state in batch form
 
         Args:
@@ -120,13 +123,9 @@ class TwoWheeledModel(Model):
 
         f_xx = np.zeros((pred_len, state_size, state_size, state_size))
 
-        f_xx[:, 0, 2, 2] = -np.cos(xs[:, 2]) * us[:, 0]
-        f_xx[:, 1, 2, 2] = -np.sin(xs[:, 2]) * us[:, 0]
+        raise NotImplementedError
 
-        return f_xx * dt
-
-    @staticmethod
-    def calc_f_ux(xs, us, dt):
+    def calc_f_ux(self, xs, us, dt):
         """ hessian of model with respect to state and input in batch form
 
         Args:
@@ -143,13 +142,9 @@ class TwoWheeledModel(Model):
 
         f_ux = np.zeros((pred_len, state_size, input_size, state_size))
 
-        f_ux[:, 0, 0, 2] = -np.sin(xs[:, 2])
-        f_ux[:, 1, 0, 2] = np.cos(xs[:, 2])
+        raise NotImplementedError
 
-        return f_ux * dt
-
-    @staticmethod
-    def calc_f_uu(xs, us, dt):
+    def calc_f_uu(self, xs, us, dt):
         """ hessian of model with respect to input in batch form
 
         Args:
@@ -166,4 +161,4 @@ class TwoWheeledModel(Model):
 
         f_uu = np.zeros((pred_len, state_size, input_size, input_size))
 
-        return f_uu * dt
+        raise NotImplementedError

@@ -8,6 +8,7 @@ from ..envs.cost import calc_cost
 
 logger = getLogger(__name__)
 
+
 class RandomShooting(Controller):
     """ Random Shooting Method for linear and nonlinear method
 
@@ -19,6 +20,7 @@ class RandomShooting(Controller):
         using probabilistic dynamics models.
         In Advances in Neural Information Processing Systems (pp. 4754-4765).
     """
+
     def __init__(self, config, model):
         super(RandomShooting, self).__init__(config, model)
 
@@ -33,7 +35,7 @@ class RandomShooting(Controller):
         self.pop_size = config.opt_config["Random"]["popsize"]
         self.opt_dim = self.input_size * self.pred_len
 
-        # get bound 
+        # get bound
         self.input_upper_bounds = np.tile(config.INPUT_UPPER_BOUND,
                                           self.pred_len)
         self.input_lower_bounds = np.tile(config.INPUT_LOWER_BOUND,
@@ -46,7 +48,7 @@ class RandomShooting(Controller):
 
         # save
         self.history_u = []
-    
+
     def obtain_sol(self, curr_x, g_xs):
         """ calculate the optimal inputs
 
@@ -65,8 +67,8 @@ class RandomShooting(Controller):
         # calc cost
         costs = self.calc_cost(curr_x,
                                samples.reshape(self.pop_size,
-                                                self.pred_len,
-                                                self.input_size),
+                                               self.pred_len,
+                                               self.input_size),
                                g_xs)
         # solution
         sol = samples[np.argmin(costs)]

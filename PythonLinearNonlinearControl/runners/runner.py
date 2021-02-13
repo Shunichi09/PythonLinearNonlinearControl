@@ -4,9 +4,11 @@ import numpy as np
 
 logger = getLogger(__name__)
 
+
 class ExpRunner():
     """ experiment runner
     """
+
     def __init__(self):
         """
         """
@@ -46,6 +48,6 @@ class ExpRunner():
             score += cost
             step_count += 1
 
-        logger.debug("Controller type = {}, Score = {}"\
+        logger.debug("Controller type = {}, Score = {}"
                      .format(controller, score))
         return np.array(history_x), np.array(history_u), np.array(history_g)

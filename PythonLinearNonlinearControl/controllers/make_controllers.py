@@ -6,6 +6,7 @@ from .mppi_williams import MPPIWilliams
 from .ilqr import iLQR
 from .ddp import DDP
 
+
 def make_controller(args, config, model):
 
     if args.controller_type == "MPC":
@@ -22,5 +23,5 @@ def make_controller(args, config, model):
         return iLQR(config, model)
     elif args.controller_type == "DDP":
         return DDP(config, model)
-    
+
     raise ValueError("No controller: {}".format(args.controller_type))

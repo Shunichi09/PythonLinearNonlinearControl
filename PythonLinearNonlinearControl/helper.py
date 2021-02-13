@@ -7,6 +7,7 @@ import six
 import pickle
 from logging import DEBUG, basicConfig, getLogger, FileHandler, StreamHandler, Formatter, Logger
 
+
 def make_logger(save_dir):
     """
     Args:
@@ -21,7 +22,7 @@ def make_logger(save_dir):
     # mypackage log level
     logger = getLogger("PythonLinearNonlinearControl")
     logger.setLevel(DEBUG)
-    
+
     # file handler
     log_path = os.path.join(save_dir, "log.txt")
     file_handler = FileHandler(log_path)
@@ -33,6 +34,7 @@ def make_logger(save_dir):
     # sh_handler = StreamHandler()
     # logger.addHandler(sh_handler)
 
+
 def int_tuple(s):
     """ transform str to tuple
     Args:
@@ -41,6 +43,7 @@ def int_tuple(s):
         tuple
     """
     return tuple(int(i) for i in s.split(','))
+
 
 def bool_flag(s):
     """ transform str to bool flg
@@ -54,6 +57,7 @@ def bool_flag(s):
     msg = 'Invalid value "%s" for bool flag (should be 0 or 1)'
     raise ValueError(msg % s)
 
+
 def file_exists(path):
     """ Check file existence on given path
     Args:
@@ -62,6 +66,7 @@ def file_exists(path):
         file_existence (bool): True if file exists otherwise False        
     """
     return os.path.exists(path)
+
 
 def create_dir_if_not_exist(outdir):
     """ Check directory existence and creates new directory if not exist
@@ -77,6 +82,7 @@ def create_dir_if_not_exist(outdir):
             return
     os.makedirs(outdir)
 
+
 def write_text_to_file(file_path, data):
     """ Write given text data to file
     Args:
@@ -85,6 +91,7 @@ def write_text_to_file(file_path, data):
     """
     with open(file_path, 'w') as f:
         f.write(data)
+
 
 def read_text_from_file(file_path):
     """ Read given file as text
@@ -96,6 +103,7 @@ def read_text_from_file(file_path):
     with open(file_path, 'r') as f:
         return f.read()
 
+
 def save_pickle(file_path, data):
     """ pickle given data to file
     Args:
@@ -104,6 +112,7 @@ def save_pickle(file_path, data):
     """
     with open(file_path, 'wb') as f:
         pickle.dump(data, f)
+
 
 def load_pickle(file_path):
     """ load pickled data from file
@@ -117,6 +126,7 @@ def load_pickle(file_path):
             return pickle.load(f)
         else:
             return pickle.load(f, encoding='bytes')
+
 
 def prepare_output_dir(base_dir, args, time_format='%Y-%m-%d-%H%M%S'):
     """ prepare a directory with current datetime as name.

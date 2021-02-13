@@ -1,6 +1,8 @@
 from .first_order_lag import FirstOrderLagConfigModule
 from .two_wheeled import TwoWheeledConfigModule
 from .cartpole import CartPoleConfigModule
+from .nonlinear_sample_system import NonlinearSampleSystemConfigModule
+
 
 def make_config(args):
     """
@@ -13,3 +15,5 @@ def make_config(args):
         return TwoWheeledConfigModule()
     elif args.env == "CartPole":
         return CartPoleConfigModule()
+    elif args.env == "NonlinearSample":
+        return NonlinearSampleSystemConfigModule()

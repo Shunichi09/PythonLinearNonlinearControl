@@ -71,6 +71,7 @@ There are 4 example environments, "FirstOrderLag", "TwoWheeledConst", "TwoWheele
 | Two wheeled System (Constant Goal) | x | ✓ | 3 | 2 | 
 | Two wheeled System (Moving Goal) | x | ✓ | 3 | 2 | 
 | Cartpole (Swing up) | x | ✓ | 4 | 1 | 
+| Nonlinear Sample System Env | x | ✓ | 2 | 1 | 
 
 All states and inputs of environments are continuous.
 **It should be noted that the algorithms for linear model could be applied to nonlinear enviroments if you have linealized the model of nonlinear environments.**

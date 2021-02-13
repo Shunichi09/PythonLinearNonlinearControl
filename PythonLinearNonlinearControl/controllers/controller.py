@@ -2,9 +2,11 @@ import numpy as np
 
 from ..envs.cost import calc_cost
 
+
 class Controller():
     """ Controller class
     """
+
     def __init__(self, config, model):
         """
         """
@@ -15,7 +17,7 @@ class Controller():
         self.state_cost_fn = config.state_cost_fn
         self.terminal_state_cost_fn = config.terminal_state_cost_fn
         self.input_cost_fn = config.input_cost_fn
-    
+
     def obtain_sol(self, curr_x, g_xs):
         """ calculate the optimal inputs
         Args:
@@ -26,7 +28,7 @@ class Controller():
         """
         raise NotImplementedError("Implement the algorithm to \
                                    get optimal input")
-    
+
     def calc_cost(self, curr_x, samples, g_xs):
         """ calculate the cost of input samples
 
@@ -46,22 +48,24 @@ class Controller():
 
         # calc cost, pred_xs.shape = (pop_size, pred_len+1, state_size)
         pred_xs = self.model.predict_traj(curr_x, samples)
-        
+
         # get particle cost
         costs = calc_cost(pred_xs, samples, g_xs,
-                          self.state_cost_fn, self.input_cost_fn, \
+                          self.state_cost_fn, self.input_cost_fn,
                           self.terminal_state_cost_fn)
-            
+
         return costs
 
     @staticmethod
     def gradient_hamiltonian_x(x, u, lam):
         """ gradient of hamitonian with respect to the state, 
         """
-        raise NotImplementedError("Implement gradient of hamitonian with respect to the state")
+        raise NotImplementedError(
+            "Implement gradient of hamitonian with respect to the state")
 
     @staticmethod
     def gradient_hamiltonian_u(x, u, lam):
         """  gradient of hamitonian with respect to the input
         """
-        raise NotImplementedError("Implement gradient of hamitonian with respect to the input")
+        raise NotImplementedError(
+            "Implement gradient of hamitonian with respect to the input")
