@@ -42,3 +42,59 @@ def fit_angle_in_range(angles, min_angle=-np.pi, max_angle=np.pi):
 
     output = np.minimum(max_angle, np.maximum(min_angle, output))
     return output.reshape(output_shape)
+
+def update_state_with_Runge_Kutta(state, u, functions, dt=0.01):
+    """ update state in Runge Kutta methods
+    Args:
+        state (array-like): state of system
+        u (array-like): input of system
+        functions (list): update function of each state,
+            each function will be called like func(*state, *u)
+            We expect that this function returns differential of each state 
+        dt (float): float in seconds
+    
+    Returns:
+        next_state (np.array): next state of system
+    
+    Notes:
+        sample of function is as follows:
+
+        def func_x(self, x_1, x_2, u):
+            x_dot = (1. - x_1**2 - x_2**2) * x_2 - x_1 + u
+            return x_dot
+        
+        Note that the function return x_dot.
+    """
+    state_size = len(state)
+    assert state_size == len(functions), \
+        "Invalid functions length, You need to give the state size functions"
+    
+    k0 = np.zeros(state_size)
+    k1 = np.zeros(state_size)
+    k2 = np.zeros(state_size)
+    k3 = np.zeros(state_size)
+
+    inputs = np.concatenate([state, u])
+
+    for i, func in enumerate(functions):
+        k0[i] = dt * func(*inputs)
+
+    add_state = state + k0 / 2.
+    inputs = np.concatenate([add_state, u])
+
+    for i, func in enumerate(functions):
+        k1[i] = dt * func(*inputs)
+    
+    add_state = state + k1 / 2.
+    inputs = np.concatenate([add_state, u])
+    
+    for i, func in enumerate(functions):
+        k2[i] = dt * func(*inputs)
+
+    add_state = state + k2
+    inputs = np.concatenate([add_state, u])
+
+    for i, func in enumerate(functions):
+        k3[i] =  dt * func(*inputs)
+
+    return (k0 + 2. * k1 + 2. * k2 + k3) / 6.
