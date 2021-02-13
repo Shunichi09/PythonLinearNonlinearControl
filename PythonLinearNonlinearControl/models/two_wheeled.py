@@ -2,9 +2,11 @@ import numpy as np
 
 from .model import Model
 
+
 class TwoWheeledModel(Model):
     """ two wheeled model
     """
+
     def __init__(self, config):
         """
         """
@@ -13,7 +15,7 @@ class TwoWheeledModel(Model):
 
     def predict_next_state(self, curr_x, u):
         """ predict next state
-        
+
         Args:
             curr_x (numpy.ndarray): current state, shape(state_size, ) or
                 shape(pop_size, state_size)
@@ -50,21 +52,21 @@ class TwoWheeledModel(Model):
             next_x = x_dot[:, :, 0] * self.dt + curr_x
 
             return next_x
-    
+
     @staticmethod
     def calc_f_x(xs, us, dt):
         """ gradient of model with respect to the state in batch form
         Args:
             xs (numpy.ndarray): state, shape(pred_len+1, state_size)
             us (numpy.ndarray): input, shape(pred_len, input_size,)
-        
+
         Return:
             f_x (numpy.ndarray): gradient of model with respect to x,
                 shape(pred_len, state_size, state_size)
 
         Notes:
             This should be discrete form !!
-        """ 
+        """
         # get size
         (_, state_size) = xs.shape
         (pred_len, _) = us.shape
@@ -81,14 +83,14 @@ class TwoWheeledModel(Model):
         Args:
             xs (numpy.ndarray): state, shape(pred_len+1, state_size)
             us (numpy.ndarray): input, shape(pred_len, input_size,)
-        
+
         Return:
             f_u (numpy.ndarray): gradient of model with respect to x,
                 shape(pred_len, state_size, input_size)
 
         Notes:
             This should be discrete form !!
-        """ 
+        """
         # get size
         (_, state_size) = xs.shape
         (pred_len, input_size) = us.shape
@@ -107,7 +109,7 @@ class TwoWheeledModel(Model):
         Args:
             xs (numpy.ndarray): state, shape(pred_len+1, state_size)
             us (numpy.ndarray): input, shape(pred_len, input_size,)
-        
+
         Return:
             f_xx (numpy.ndarray): gradient of model with respect to x,
                 shape(pred_len, state_size, state_size, state_size)
@@ -130,7 +132,7 @@ class TwoWheeledModel(Model):
         Args:
             xs (numpy.ndarray): state, shape(pred_len+1, state_size)
             us (numpy.ndarray): input, shape(pred_len, input_size,)
-        
+
         Return:
             f_ux (numpy.ndarray): gradient of model with respect to x,
                 shape(pred_len, state_size, input_size, state_size)
@@ -145,7 +147,7 @@ class TwoWheeledModel(Model):
         f_ux[:, 1, 0, 2] = np.cos(xs[:, 2])
 
         return f_ux * dt
-    
+
     @staticmethod
     def calc_f_uu(xs, us, dt):
         """ hessian of model with respect to input in batch form
@@ -153,7 +155,7 @@ class TwoWheeledModel(Model):
         Args:
             xs (numpy.ndarray): state, shape(pred_len+1, state_size)
             us (numpy.ndarray): input, shape(pred_len, input_size,)
-        
+
         Return:
             f_uu (numpy.ndarray): gradient of model with respect to x,
                 shape(pred_len, state_size, input_size, input_size)

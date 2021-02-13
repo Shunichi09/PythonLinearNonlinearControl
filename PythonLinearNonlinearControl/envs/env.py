@@ -1,13 +1,15 @@
 import numpy as np
 
+
 class Env():
     """ Environments class
     Attributes:
-    
+
         curr_x (numpy.ndarray): current state 
         history_x (list[numpy.ndarray]): historty of state, shape(step_count*state_size)
         step_count (int): step count
     """
+
     def __init__(self, config):
         """
         """
@@ -25,12 +27,12 @@ class Env():
             info (dict): information
         """
         self.step_count = 0
-        
+
         self.curr_x = np.zeros(self.config["state_size"])
 
         if init_x is not None:
             self.curr_x = init_x
-        
+
         # clear memory
         self.history_x = []
         self.history_g_x = []

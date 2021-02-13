@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 from ..helper import save_pickle, load_pickle
 
+
 def plot_result(history, history_g=None, ylabel="x",
                 save_dir="./result", name="state_history"):
     """
@@ -28,14 +29,14 @@ def plot_result(history, history_g=None, ylabel="x",
         def plot(axis, history, history_g=None):
             axis.plot(range(iters), history, c="r", linewidth=3)
             if history_g is not None:
-                axis.plot(range(iters), history_g,\
+                axis.plot(range(iters), history_g,
                           c="b", linewidth=3, label="goal")
 
         if i < size:
             plot(axis1, history[:, i], history_g=history_g[:, i])
         if i+1 < size:
             plot(axis2, history[:, i+1], history_g=history_g[:, i+1])
-        if i+2 < size:    
+        if i+2 < size:
             plot(axis3, history[:, i+2], history_g=history_g[:, i+2])
 
         # save
@@ -46,6 +47,7 @@ def plot_result(history, history_g=None, ylabel="x",
 
         axis1.legend(ncol=1, bbox_to_anchor=(0., 1.02, 1., 0.102), loc=3)
         figure.savefig(path, bbox_inches="tight", pad_inches=0.05)
+
 
 def plot_results(history_x, history_u, history_g=None, args=None):
     """
@@ -64,11 +66,12 @@ def plot_results(history_x, history_u, history_g=None, args=None):
         controller_type = args.controller_type
 
     plot_result(history_x, history_g=history_g, ylabel="x",
-                name= env + "-state_history",
+                name=env + "-state_history",
                 save_dir="./result/" + controller_type)
     plot_result(history_u, history_g=np.zeros_like(history_u), ylabel="u",
-                name= env + "-input_history",
+                name=env + "-input_history",
                 save_dir="./result/" + controller_type)
+
 
 def save_plot_data(history_x, history_u, history_g=None, args=None):
     """ save plot data
@@ -98,6 +101,7 @@ def save_plot_data(history_x, history_u, history_g=None, args=None):
                         env + "-history_g.pkl")
     save_pickle(path, history_g)
 
+
 def load_plot_data(env, controller_type, result_dir="./result"):
     """
     Args:
@@ -123,6 +127,7 @@ def load_plot_data(env, controller_type, result_dir="./result"):
 
     return history_x, history_u, history_g
 
+
 def plot_multi_result(histories, histories_g=None, labels=None, ylabel="x",
                       save_dir="./result", name="state_history"):
     """
@@ -130,7 +135,7 @@ def plot_multi_result(histories, histories_g=None, labels=None, ylabel="x",
         history (numpy.ndarray): history, shape(iters, size)
     """
     (_, iters, size) = histories.shape
-    
+
     for i in range(0, size, 2):
 
         figure = plt.figure()
@@ -146,17 +151,17 @@ def plot_multi_result(histories, histories_g=None, labels=None, ylabel="x",
             axis.plot(range(iters), history,
                       linewidth=3, label=label, alpha=0.7, linestyle="dashed")
             if history_g is not None:
-                axis.plot(range(iters), history_g,\
+                axis.plot(range(iters), history_g,
                           c="b", linewidth=3)
 
         if i < size:
             for j, (history, history_g) \
-                in enumerate(zip(histories, histories_g)):
+                    in enumerate(zip(histories, histories_g)):
                 plot(axis1, history[:, i],
                      history_g=history_g[:, i], label=labels[j])
         if i+1 < size:
             for j, (history, history_g) in \
-                enumerate(zip(histories, histories_g)):
+                    enumerate(zip(histories, histories_g)):
                 plot(axis2, history[:, i+1],
                      history_g=history_g[:, i+1], label=labels[j])
 

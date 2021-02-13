@@ -9,6 +9,7 @@ from ..envs.cost import calc_cost
 
 logger = getLogger(__name__)
 
+
 class LinearMPC(Controller):
     """ Model Predictive Controller for linear model
 
@@ -21,6 +22,7 @@ class LinearMPC(Controller):
     Ref:
         Maciejowski, J. M. (2002). Predictive control: with constraints.
     """
+
     def __init__(self, config, model):
         """
         Args:
@@ -55,7 +57,7 @@ class LinearMPC(Controller):
         self.dt_input_upper_bound = config.DT_INPUT_UPPER_BOUND
         self.input_lower_bound = config.INPUT_LOWER_BOUND
         self.input_upper_bound = config.INPUT_UPPER_BOUND
-      
+
         # setup controllers
         self.W = None
         self.omega = None
@@ -66,7 +68,7 @@ class LinearMPC(Controller):
 
         # history
         self.history_u = [np.zeros(self.input_size)]
-        
+
     def setup(self):
         """
         setup Model Predictive Control as a quadratic programming        
@@ -77,11 +79,11 @@ class LinearMPC(Controller):
         for _ in range(self.pred_len - 1):
             temp_mat = np.matmul(A_factorials[-1], self.A)
             self.phi_mat = np.vstack((self.phi_mat, temp_mat))
-            A_factorials.append(temp_mat) # after we use this factorials
-            
+            A_factorials.append(temp_mat)  # after we use this factorials
+
         self.gamma_mat = self.B.copy()
         gammma_mat_temp = self.B.copy()
-        
+
         for i in range(self.pred_len - 1):
             temp_1_mat = np.matmul(A_factorials[i], self.B)
             gammma_mat_temp = temp_1_mat + gammma_mat_temp
@@ -91,8 +93,8 @@ class LinearMPC(Controller):
 
         for i in range(self.pred_len - 1):
             temp_mat = np.zeros_like(self.gamma_mat)
-            temp_mat[int((i + 1)*self.state_size): , :] =\
-                self.gamma_mat[:-int((i + 1)*self.state_size) , :]
+            temp_mat[int((i + 1)*self.state_size):, :] =\
+                self.gamma_mat[:-int((i + 1)*self.state_size), :]
 
             self.theta_mat = np.hstack((self.theta_mat, temp_mat))
 
@@ -114,12 +116,12 @@ class LinearMPC(Controller):
 
             for i in range(self.pred_len - 1):
                 for j in range(self.input_size):
-                    temp_F[j * 2: (j + 1) * 2,\
+                    temp_F[j * 2: (j + 1) * 2,
                            ((i+1) * self.input_size) + j] = np.array([1., -1.])
                 self.F = np.vstack((self.F, temp_F))
 
             self.F1 = self.F[:, :self.input_size]
-            
+
             temp_f = []
             for i in range(self.input_size):
                 temp_f.append(-1 * self.input_upper_bound[i])
@@ -168,7 +170,7 @@ class LinearMPC(Controller):
         H = H * 0.5
 
         # constraints
-        A = [] 
+        A = []
         b = []
 
         if self.W is not None:
@@ -187,14 +189,14 @@ class LinearMPC(Controller):
 
         # using cvxopt
         def optimized_func(dt_us):
-            return (np.dot(dt_us, np.dot(H, dt_us.reshape(-1, 1))) \
+            return (np.dot(dt_us, np.dot(H, dt_us.reshape(-1, 1)))
                     - np.dot(G.T, dt_us.reshape(-1, 1)))[0]
 
         # constraint
         lb = np.array([-np.inf for _ in range(len(ub))])  # one side cons
         cons = LinearConstraint(A, lb, ub)
         # solve
-        opt_sol = minimize(optimized_func, self.prev_sol.flatten(),\
+        opt_sol = minimize(optimized_func, self.prev_sol.flatten(),
                            constraints=[cons])
         opt_dt_us = opt_sol.x
 
@@ -213,21 +215,21 @@ class LinearMPC(Controller):
         """
 
         # to dt form
-        opt_dt_u_seq = np.cumsum(opt_dt_us.reshape(self.pred_len,\
+        opt_dt_u_seq = np.cumsum(opt_dt_us.reshape(self.pred_len,
                                                    self.input_size),
                                  axis=0)
         self.prev_sol = opt_dt_u_seq.copy()
-        
+
         opt_u_seq = opt_dt_u_seq + self.history_u[-1]
-        
+
         # save
         self.history_u.append(opt_u_seq[0])
 
         # check costs
         costs = self.calc_cost(curr_x,
                                opt_u_seq.reshape(1,
-                                                  self.pred_len,
-                                                  self.input_size),
+                                                 self.pred_len,
+                                                 self.input_size),
                                g_xs)
 
         logger.debug("Cost = {}".format(costs))

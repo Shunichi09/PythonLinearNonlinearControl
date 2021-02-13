@@ -3,25 +3,27 @@ import scipy
 from scipy import integrate
 from .env import Env
 
+
 class FirstOrderLagEnv(Env):
     """ First Order Lag System Env
     """
+
     def __init__(self, tau=0.63):
         """
         """
-        self.config = {"state_size" : 4,\
-                       "input_size" : 2,\
-                       "dt" : 0.05,\
-                       "max_step" : 500,\
-                       "input_lower_bound": [-0.5, -0.5],\
+        self.config = {"state_size": 4,
+                       "input_size": 2,
+                       "dt": 0.05,
+                       "max_step": 500,
+                       "input_lower_bound": [-0.5, -0.5],
                        "input_upper_bound": [0.5, 0.5],
                        }
 
         super(FirstOrderLagEnv, self).__init__(self.config)
 
         # to get discrete system matrix
-        self.A, self.B = self._to_state_space(tau, dt=self.config["dt"]) 
-        
+        self.A, self.B = self._to_state_space(tau, dt=self.config["dt"])
+
     @staticmethod
     def _to_state_space(tau, dt=0.05):
         """
@@ -34,13 +36,13 @@ class FirstOrderLagEnv(Env):
         """
         # continuous
         Ac = np.array([[-1./tau, 0., 0., 0.],
-                      [0., -1./tau, 0., 0.],
-                      [1., 0., 0., 0.], 
-                      [0., 1., 0., 0.]])
+                       [0., -1./tau, 0., 0.],
+                       [1., 0., 0., 0.],
+                       [0., 1., 0., 0.]])
         Bc = np.array([[1./tau, 0.],
-                      [0., 1./tau],
-                      [0., 0.],
-                      [0., 0.]])
+                       [0., 1./tau],
+                       [0., 0.],
+                       [0., 0.]])
         # to discrete system
         A = scipy.linalg.expm(dt*Ac)
         # B = np.matmul(np.matmul(scipy.linalg.expm(Ac*dt) -
@@ -55,7 +57,7 @@ class FirstOrderLagEnv(Env):
                 B[m, n] = sol[0]
 
         return A, B
-    
+
     def reset(self, init_x=None):
         """ reset state
         Returns:
@@ -63,7 +65,7 @@ class FirstOrderLagEnv(Env):
             info (dict): information
         """
         self.step_count = 0
-        
+
         self.curr_x = np.zeros(self.config["state_size"])
 
         if init_x is not None:
@@ -71,7 +73,7 @@ class FirstOrderLagEnv(Env):
 
         # goal
         self.g_x = np.array([0., 0, -2., 3.])
-        
+
         # clear memory
         self.history_x = []
         self.history_g_x = []
@@ -94,7 +96,7 @@ class FirstOrderLagEnv(Env):
                     self.config["input_upper_bound"])
 
         next_x = np.matmul(self.A, self.curr_x[:, np.newaxis]) \
-                 + np.matmul(self.B, u[:, np.newaxis])
+            + np.matmul(self.B, u[:, np.newaxis])
 
         # cost
         cost = 0
@@ -104,16 +106,16 @@ class FirstOrderLagEnv(Env):
         # save history
         self.history_x.append(next_x.flatten())
         self.history_g_x.append(self.g_x.flatten())
-        
+
         # update
         self.curr_x = next_x.flatten()
         # update costs
         self.step_count += 1
 
         return next_x.flatten(), cost, \
-               self.step_count > self.config["max_step"], \
-               {"goal_state" : self.g_x}
-    
+            self.step_count > self.config["max_step"], \
+            {"goal_state": self.g_x}
+
     def plot_func(self, to_plot, i=None, history_x=None, history_g_x=None):
         """
         """

@@ -1,9 +1,11 @@
 import numpy as np
 from .planner import Planner
 
+
 class ClosestPointPlanner(Planner):
     """ This planner make goal state according to goal path
     """
+
     def __init__(self, config):
         """
         """
@@ -24,7 +26,7 @@ class ClosestPointPlanner(Planner):
         min_idx = np.argmin(np.linalg.norm(curr_x[:-1] - g_traj[:, :-1],
                                            axis=1))
 
-        start = (min_idx+self.n_ahead) 
+        start = (min_idx+self.n_ahead)
         if start > len(g_traj):
             start = len(g_traj)
 
@@ -32,7 +34,7 @@ class ClosestPointPlanner(Planner):
 
         if (min_idx+self.n_ahead+self.pred_len+1) > len(g_traj):
             end = len(g_traj)
-        
+
         if abs(start - end) != self.pred_len + 1:
             return np.tile(g_traj[-1], (self.pred_len+1, 1))
 

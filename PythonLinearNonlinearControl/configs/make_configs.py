@@ -2,6 +2,7 @@ from .first_order_lag import FirstOrderLagConfigModule
 from .two_wheeled import TwoWheeledConfigModule
 from .cartpole import CartPoleConfigModule
 
+
 def make_config(args):
     """
     Returns:
