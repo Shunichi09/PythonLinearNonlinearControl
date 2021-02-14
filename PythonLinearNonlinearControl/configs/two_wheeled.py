@@ -22,17 +22,16 @@ class TwoWheeledConfigModule():
     Q = np.diag([1., 1., 0.01])
     Sf = np.diag([5., 5., 1.])
     """
-    # for track goal
     """
+    # for track goal
     R = np.diag([0.01, 0.01])
     Q = np.diag([2.5, 2.5, 0.01])
     Sf = np.diag([2.5, 2.5, 0.01])
     """
     # for track goal to NMPC
-    R = np.diag([0.1, 0.1])
-    Q = np.diag([0.1, 0.1, 0.1])
-    Sf = np.diag([0.25, 0.25, 0.25])
-
+    R = np.diag([1., 1.])
+    Q = np.diag([0.001, 0.001, 0.001])
+    Sf = np.diag([1., 1., 0.001])
     # bounds
     INPUT_LOWER_BOUND = np.array([-1.5, -3.14])
     INPUT_UPPER_BOUND = np.array([1.5, 3.14])
@@ -326,3 +325,83 @@ class TwoWheeledConfigModule():
             return lam_dot
         else:
             raise NotImplementedError
+
+
+class TwoWheeledExtendConfigModule(TwoWheeledConfigModule):
+    PRED_LEN = 20
+
+    def __init__(self):
+        super().__init__()
+        self.opt_config = {
+            "NMPCCGMRES": {
+                "threshold": 1e-3,
+                "zeta": 5.,
+                "delta": 0.01,
+                "alpha": 0.5,
+                "tf": 1.,
+                "constraint": True
+            },
+            "NMPCNewton": {
+                "threshold": 1e-3,
+                "max_iteration": 500,
+                "learning_rate": 1e-3
+            }
+        }
+
+    @staticmethod
+    def gradient_hamiltonian_input_with_constraint(x, lam, u, g_x, dummy_u, raw):
+        """
+
+        Args:
+            x (numpy.ndarray): shape(pred_len+1, state_size)
+            lam (numpy.ndarray): shape(pred_len, state_size)
+            u (numpy.ndarray): shape(pred_len, input_size)
+            g_xs (numpy.ndarray): shape(pred_len, state_size)
+            dummy_u (numpy.ndarray): shape(pred_len, input_size)
+            raw (numpy.ndarray): shape(pred_len, input_size), Lagrangian for constraints
+
+        Returns:
+            F (numpy.ndarray), shape(pred_len, 3)
+        """
+        if len(x.shape) == 1:
+            vanilla_F = np.zeros(2)
+            extend_F = np.zeros(2)  # 1 is the same as input size
+            extend_C = np.zeros(2)
+
+            vanilla_F[0] = u[0] + lam[0] * \
+                np.cos(x[2]) + lam[1] * np.sin(x[2]) + 2. * raw[0] * u[0]
+            vanilla_F[1] = u[1] + lam[2] + 2 * raw[1] * u[1]
+
+            extend_F[0] = -0.01 + 2. * raw[0] * dummy_u[0]
+            extend_F[1] = -0.01 + 2. * raw[1] * dummy_u[1]
+
+            extend_C[0] = u[0]**2 + dummy_u[0]**2 - \
+                TwoWheeledConfigModule.INPUT_LOWER_BOUND[0]**2
+            extend_C[1] = u[1]**2 + dummy_u[1]**2 - \
+                TwoWheeledConfigModule.INPUT_LOWER_BOUND[1]**2
+
+            F = np.concatenate([vanilla_F, extend_F, extend_C])
+
+        elif len(x.shape) == 2:
+            pred_len, _ = u.shape
+            vanilla_F = np.zeros((pred_len, 2))
+            extend_F = np.zeros((pred_len, 2))  # 1 is the same as input size
+            extend_C = np.zeros((pred_len, 2))
+
+            for i in range(pred_len):
+                vanilla_F[i, 0] = u[i, 0] + lam[i, 0] * \
+                    np.cos(x[i, 2]) + lam[i, 1] * \
+                    np.sin(x[i, 2]) + 2. * raw[i, 0] * u[i, 0]
+                vanilla_F[i, 1] = u[i, 1] + lam[i, 2] + 2 * raw[i, 1] * u[i, 1]
+
+                extend_F[i, 0] = -0.01 + 2. * raw[i, 0] * dummy_u[i, 0]
+                extend_F[i, 1] = -0.01 + 2. * raw[i, 1] * dummy_u[i, 1]
+
+                extend_C[i, 0] = u[i, 0]**2 + dummy_u[i, 0]**2 - \
+                    TwoWheeledConfigModule.INPUT_LOWER_BOUND[0]**2
+                extend_C[i, 1] = u[i, 1]**2 + dummy_u[i, 1]**2 - \
+                    TwoWheeledConfigModule.INPUT_LOWER_BOUND[1]**2
+
+            F = np.concatenate([vanilla_F, extend_F, extend_C], axis=1)
+
+        return F

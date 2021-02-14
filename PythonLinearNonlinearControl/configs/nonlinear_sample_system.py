@@ -290,8 +290,6 @@ class NonlinearSampleSystemConfigModule():
 
 
 class NonlinearSampleSystemExtendConfigModule(NonlinearSampleSystemConfigModule):
-    INPUT_SIZE = 1  # include dummy input
-
     def __init__(self):
         super().__init__()
         self.opt_config = {

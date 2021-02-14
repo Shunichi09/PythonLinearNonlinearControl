@@ -56,6 +56,20 @@ class TwoWheeledModel(Model):
 
             return next_x
 
+    def x_dot(self, curr_x, u):
+        """ compute x dot
+        Args:
+            curr_x (numpy.ndarray): current state, shape(state_size, )
+            u (numpy.ndarray): input, shape(input_size, )
+        Returns:
+            x_dot (numpy.ndarray): next state, shape(state_size, )
+        """
+        B = np.array([[np.cos(curr_x[-1]), 0.],
+                      [np.sin(curr_x[-1]), 0.],
+                      [0., 1.]])
+        x_dot = np.matmul(B, u[:, np.newaxis])
+        return x_dot.flatten()
+
     def predict_adjoint_state(self, lam, x, u, g_x=None, t=None):
         """ predict adjoint states
 

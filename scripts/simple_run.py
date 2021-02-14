@@ -41,7 +41,7 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--controller_type", type=str, default="NMPCCGMRES")
-    parser.add_argument("--env", type=str, default="NonlinearSample")
+    parser.add_argument("--env", type=str, default="TwoWheeledConst")
     parser.add_argument("--save_anim", type=bool_flag, default=0)
     parser.add_argument("--result_dir", type=str, default="./result")
 
