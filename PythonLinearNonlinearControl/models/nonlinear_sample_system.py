@@ -15,7 +15,7 @@ class NonlinearSampleSystemModel(Model):
         self.dt = config.DT
         self.gradient_hamiltonian_state = config.gradient_hamiltonian_state
         self.gradient_hamiltonian_input = config.gradient_hamiltonian_input
-        self.gradient_cost_fn_with_state = config.gradient_cost_fn_with_state
+        self.gradient_cost_fn_state = config.gradient_cost_fn_state
 
     def predict_next_state(self, curr_x, u):
         """ predict next state
@@ -34,7 +34,7 @@ class NonlinearSampleSystemModel(Model):
             func_2 = self._func_x_2
             functions = [func_1, func_2]
             next_x = update_state_with_Runge_Kutta(
-                curr_x, u, functions, batch=False)
+                curr_x, u, functions, batch=False, dt=self.dt)
             return next_x
 
         elif len(u.shape) == 2:
@@ -42,11 +42,25 @@ class NonlinearSampleSystemModel(Model):
             def func_2(xs, us): return self._func_x_2(xs, us, batch=True)
             functions = [func_1, func_2]
             next_x = update_state_with_Runge_Kutta(
-                curr_x, u, functions, batch=True)
+                curr_x, u, functions, batch=True, dt=self.dt)
 
             return next_x
 
-    def predict_adjoint_state(self, lam, x, u, g_x=None, t=None):
+    def x_dot(self, curr_x, u):
+        """
+        Args:
+            curr_x (numpy.ndarray): current state, shape(state_size, )
+            u (numpy.ndarray): input, shape(input_size, )
+        Returns:
+            x_dot (numpy.ndarray): next state, shape(state_size, )
+        """
+        state_size = curr_x.shape[0]
+        x_dot = np.zeros(state_size)
+        x_dot[0] = self._func_x_1(curr_x, u)
+        x_dot[1] = self._func_x_2(curr_x, u)
+        return x_dot
+
+    def predict_adjoint_state(self, lam, x, u, g_x=None):
         """ predict adjoint states
 
         Args:
@@ -78,7 +92,7 @@ class NonlinearSampleSystemModel(Model):
             terminal_lam (numpy.ndarray): terminal adjoint state,
                 shape(state_size, )
         """
-        terminal_lam = self.gradient_cost_fn_with_state(
+        terminal_lam = self.gradient_cost_fn_state(
             terminal_x, terminal_g_x, terminal=True)  # return in shape[1, state_size]
         return terminal_lam[0]
 

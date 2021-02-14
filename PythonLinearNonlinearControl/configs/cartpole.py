@@ -148,7 +148,7 @@ class CartPoleConfigModule():
             * CartPoleConfigModule.TERMINAL_WEIGHT
 
     @staticmethod
-    def gradient_cost_fn_with_state(x, g_x, terminal=False):
+    def gradient_cost_fn_state(x, g_x, terminal=False):
         """ gradient of costs with respect to the state
 
         Args:
@@ -177,7 +177,7 @@ class CartPoleConfigModule():
         return cost_dx * CartPoleConfigModule.TERMINAL_WEIGHT
 
     @staticmethod
-    def gradient_cost_fn_with_input(x, u):
+    def gradient_cost_fn_input(x, u):
         """ gradient of costs with respect to the input
 
         Args:
@@ -189,7 +189,7 @@ class CartPoleConfigModule():
         return 2. * u * np.diag(CartPoleConfigModule.R)
 
     @staticmethod
-    def hessian_cost_fn_with_state(x, g_x, terminal=False):
+    def hessian_cost_fn_state(x, g_x, terminal=False):
         """ hessian costs with respect to the state
 
         Args:
@@ -227,7 +227,7 @@ class CartPoleConfigModule():
         return hessian[np.newaxis, :, :] * CartPoleConfigModule.TERMINAL_WEIGHT
 
     @staticmethod
-    def hessian_cost_fn_with_input(x, u):
+    def hessian_cost_fn_input(x, u):
         """ hessian costs with respect to the input
 
         Args:
@@ -242,7 +242,7 @@ class CartPoleConfigModule():
         return np.tile(2.*CartPoleConfigModule.R, (pred_len, 1, 1))
 
     @staticmethod
-    def hessian_cost_fn_with_input_state(x, u):
+    def hessian_cost_fn_input_state(x, u):
         """ hessian costs with respect to the state and input
 
         Args:

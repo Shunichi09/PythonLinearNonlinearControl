@@ -160,7 +160,7 @@ class TwoWheeledConfigModule():
         return ((terminal_diff)**2) * np.diag(TwoWheeledConfigModule.Sf)
 
     @staticmethod
-    def gradient_cost_fn_with_state(x, g_x, terminal=False):
+    def gradient_cost_fn_state(x, g_x, terminal=False):
         """ gradient of costs with respect to the state
 
         Args:
@@ -180,7 +180,7 @@ class TwoWheeledConfigModule():
                 * np.diag(TwoWheeledConfigModule.Sf))[np.newaxis, :]
 
     @staticmethod
-    def gradient_cost_fn_with_input(x, u):
+    def gradient_cost_fn_input(x, u):
         """ gradient of costs with respect to the input
 
         Args:
@@ -193,7 +193,7 @@ class TwoWheeledConfigModule():
         return 2. * u * np.diag(TwoWheeledConfigModule.R)
 
     @staticmethod
-    def hessian_cost_fn_with_state(x, g_x, terminal=False):
+    def hessian_cost_fn_state(x, g_x, terminal=False):
         """ hessian costs with respect to the state
 
         Args:
@@ -212,7 +212,7 @@ class TwoWheeledConfigModule():
         return np.tile(2.*TwoWheeledConfigModule.Sf, (1, 1, 1))
 
     @staticmethod
-    def hessian_cost_fn_with_input(x, u):
+    def hessian_cost_fn_input(x, u):
         """ hessian costs with respect to the input
 
         Args:
@@ -228,7 +228,7 @@ class TwoWheeledConfigModule():
         return np.tile(2.*TwoWheeledConfigModule.R, (pred_len, 1, 1))
 
     @staticmethod
-    def hessian_cost_fn_with_input_state(x, u):
+    def hessian_cost_fn_input_state(x, u):
         """ hessian costs with respect to the state and input
 
         Args:

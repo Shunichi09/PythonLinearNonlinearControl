@@ -14,7 +14,7 @@ class TwoWheeledModel(Model):
         self.dt = config.DT
         self.gradient_hamiltonian_state = config.gradient_hamiltonian_state
         self.gradient_hamiltonian_input = config.gradient_hamiltonian_input
-        self.gradient_cost_fn_with_state = config.gradient_cost_fn_with_state
+        self.gradient_cost_fn_state = config.gradient_cost_fn_state
 
     def predict_next_state(self, curr_x, u):
         """ predict next state
@@ -88,7 +88,7 @@ class TwoWheeledModel(Model):
             terminal_lam (numpy.ndarray): terminal adjoint state,
                 shape(state_size, )
         """
-        terminal_lam = self.gradient_cost_fn_with_state(
+        terminal_lam = self.gradient_cost_fn_state(
             terminal_x, terminal_g_x, terminal=True)  # return in shape[1, state_size]
         return terminal_lam[0]
 

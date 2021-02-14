@@ -115,7 +115,7 @@ class FirstOrderLagConfigModule():
             * np.diag(FirstOrderLagConfigModule.Sf)
 
     @staticmethod
-    def gradient_cost_fn_with_state(x, g_x, terminal=False):
+    def gradient_cost_fn_state(x, g_x, terminal=False):
         """ gradient of costs with respect to the state
 
         Args:
@@ -133,7 +133,7 @@ class FirstOrderLagConfigModule():
                 * np.diag(FirstOrderLagConfigModule.Sf))[np.newaxis, :]
 
     @staticmethod
-    def gradient_cost_fn_with_input(x, u):
+    def gradient_cost_fn_input(x, u):
         """ gradient of costs with respect to the input
 
         Args:
@@ -146,7 +146,7 @@ class FirstOrderLagConfigModule():
         return 2. * u * np.diag(FirstOrderLagConfigModule.R)
 
     @staticmethod
-    def hessian_cost_fn_with_state(x, g_x, terminal=False):
+    def hessian_cost_fn_state(x, g_x, terminal=False):
         """ hessian costs with respect to the state
 
         Args:
@@ -165,7 +165,7 @@ class FirstOrderLagConfigModule():
         return np.tile(2.*FirstOrderLagConfigModule.Sf, (1, 1, 1))
 
     @staticmethod
-    def hessian_cost_fn_with_input(x, u):
+    def hessian_cost_fn_input(x, u):
         """ hessian costs with respect to the input
 
         Args:
@@ -181,7 +181,7 @@ class FirstOrderLagConfigModule():
         return np.tile(2.*FirstOrderLagConfigModule.R, (pred_len, 1, 1))
 
     @staticmethod
-    def hessian_cost_fn_with_input_state(x, u):
+    def hessian_cost_fn_input_state(x, u):
         """ hessian costs with respect to the state and input
 
         Args:

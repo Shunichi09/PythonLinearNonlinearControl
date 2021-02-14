@@ -62,18 +62,11 @@ class NonlinearSampleSystemConfigModule():
                 "threshold": 1e-6,
             },
             "NMPC": {
-                "threshold": 1e-5,
-                "max_iters": 1000,
-                "learning_rate": 0.1
-            },
-            "NMPC-CGMRES": {
-                "threshold": 1e-3
-            },
-            "NMPC-Newton": {
-                "threshold": 1e-3,
-                "max_iteration": 500,
-                "learning_rate": 1e-3
-            },
+                "threshold": 0.01,
+                "max_iters": 5000,
+                "learning_rate": 0.01,
+                "optimizer_mode": "conjugate"
+            }
         }
 
     @staticmethod
@@ -133,7 +126,7 @@ class NonlinearSampleSystemConfigModule():
         return 0.5 * (terminal_x[0]**2) + 0.5 * (terminal_x[1]**2)
 
     @staticmethod
-    def gradient_cost_fn_with_state(x, g_x, terminal=False):
+    def gradient_cost_fn_state(x, g_x, terminal=False):
         """ gradient of costs with respect to the state
 
         Args:
@@ -157,7 +150,7 @@ class NonlinearSampleSystemConfigModule():
         return cost_dx
 
     @staticmethod
-    def gradient_cost_fn_with_input(x, u):
+    def gradient_cost_fn_input(x, u):
         """ gradient of costs with respect to the input
 
         Args:
@@ -169,7 +162,7 @@ class NonlinearSampleSystemConfigModule():
         return 2. * u * np.diag(NonlinearSampleSystemConfigModule.R)
 
     @staticmethod
-    def hessian_cost_fn_with_state(x, g_x, terminal=False):
+    def hessian_cost_fn_state(x, g_x, terminal=False):
         """ hessian costs with respect to the state
 
         Args:
@@ -197,7 +190,7 @@ class NonlinearSampleSystemConfigModule():
         return hessian[np.newaxis, :, :]
 
     @staticmethod
-    def hessian_cost_fn_with_input(x, u):
+    def hessian_cost_fn_input(x, u):
         """ hessian costs with respect to the input
 
         Args:
@@ -212,7 +205,7 @@ class NonlinearSampleSystemConfigModule():
         return np.tile(NonlinearSampleSystemConfigModule.R, (pred_len, 1, 1))
 
     @staticmethod
-    def hessian_cost_fn_with_input_state(x, u):
+    def hessian_cost_fn_input_state(x, u):
         """ hessian costs with respect to the state and input
 
         Args:
@@ -294,3 +287,69 @@ class NonlinearSampleSystemConfigModule():
 
         else:
             raise NotImplementedError
+
+
+class NonlinearSampleSystemExtendConfigModule(NonlinearSampleSystemConfigModule):
+    INPUT_SIZE = 1  # include dummy input
+
+    def __init__(self):
+        super().__init__()
+        self.opt_config = {
+            "NMPCCGMRES": {
+                "threshold": 1e-3,
+                "zeta": 100.,
+                "delta": 0.01,
+                "alpha": 0.5,
+                "tf": 1.,
+                "constraint": True
+            },
+            "NMPCNewton": {
+                "threshold": 1e-3,
+                "max_iteration": 500,
+                "learning_rate": 1e-3
+            }
+        }
+
+    @staticmethod
+    def gradient_hamiltonian_input_with_constraint(x, lam, u, g_x, dummy_u, raw):
+        """
+
+        Args:
+            x (numpy.ndarray): shape(pred_len+1, state_size)
+            lam (numpy.ndarray): shape(pred_len, state_size)
+            u (numpy.ndarray): shape(pred_len, input_size)
+            g_xs (numpy.ndarray): shape(pred_len, state_size)
+            dummy_u (numpy.ndarray): shape(pred_len, input_size)
+            raw (numpy.ndarray): shape(pred_len, input_size), Lagrangian for constraints
+
+        Returns:
+            F (numpy.ndarray), shape(pred_len, 3)
+        """
+        if len(x.shape) == 1:
+            vanilla_F = np.zeros(1)
+            extend_F = np.zeros(1)  # 1 is the same as input size
+            extend_C = np.zeros(1)
+
+            vanilla_F[0] = u[0] + lam[1] + 2. * raw[0] * u[0]
+            extend_F[0] = -0.01 + 2. * raw[0] * dummy_u[0]
+            extend_C[0] = u[0]**2 + dummy_u[0]**2 - \
+                NonlinearSampleSystemConfigModule.INPUT_LOWER_BOUND**2
+
+            F = np.concatenate([vanilla_F, extend_F, extend_C])
+
+        elif len(x.shape) == 2:
+            pred_len, _ = u.shape
+            vanilla_F = np.zeros((pred_len, 1))
+            extend_F = np.zeros((pred_len, 1))  # 1 is the same as input size
+            extend_C = np.zeros((pred_len, 1))
+
+            for i in range(pred_len):
+                vanilla_F[i, 0] = \
+                    u[i, 0] + lam[i, 1] + 2. * raw[i, 0] * u[i, 0]
+                extend_F[i, 0] = -0.01 + 2. * raw[i, 0] * dummy_u[i, 0]
+                extend_C[i, 0] = u[i, 0]**2 + dummy_u[i, 0]**2 - \
+                    NonlinearSampleSystemConfigModule.INPUT_LOWER_BOUND**2
+
+            F = np.concatenate([vanilla_F, extend_F, extend_C], axis=1)
+
+        return F
