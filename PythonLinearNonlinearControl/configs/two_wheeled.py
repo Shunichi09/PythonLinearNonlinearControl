@@ -22,8 +22,8 @@ class TwoWheeledConfigModule():
     Q = np.diag([1., 1., 0.01])
     Sf = np.diag([5., 5., 1.])
     """
-    """
     # for track goal
+    """
     R = np.diag([0.01, 0.01])
     Q = np.diag([2.5, 2.5, 0.01])
     Sf = np.diag([2.5, 2.5, 0.01])
