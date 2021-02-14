@@ -83,9 +83,10 @@ class TwoWheeledConfigModule():
                 "threshold": 1e-6,
             },
             "NMPC": {
-                "threshold": 1e-3,
-                "max_iters": 1000,
-                "learning_rate": 0.1
+                "threshold": 0.01,
+                "max_iters": 5000,
+                "learning_rate": 0.01,
+                "optimizer_mode": "conjugate"
             },
             "NMPC-CGMRES": {
             },
