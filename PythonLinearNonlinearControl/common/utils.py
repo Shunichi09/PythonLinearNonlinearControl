@@ -116,3 +116,32 @@ def update_state_with_Runge_Kutta(state, u, functions, dt=0.01, batch=True):
             k3[:, i] = dt * func(state + k2, u)
 
         return state + (k0 + 2. * k1 + 2. * k2 + k3) / 6.
+
+
+def line_search(grad, sol, compute_eval_val,
+                init_alpha=0.001, max_iter=100, update_ratio=1.):
+    """ line search
+    Args:
+        grad (numpy.ndarray): gradient
+        sol (numpy.ndarray): sol
+        compute_eval_val (numpy.ndarray): function to compute evaluation value
+
+    Returns: 
+        alpha (float): result of line search 
+    """
+    assert grad.shape == sol.shape
+    base_val = np.inf
+    alpha = init_alpha
+    original_sol = sol.copy()
+
+    for _ in range(max_iter):
+        updated_sol = original_sol - alpha * grad
+        eval_val = compute_eval_val(updated_sol)
+
+        if eval_val < base_val:
+            alpha += init_alpha * update_ratio
+            base_val = eval_val
+        else:
+            break
+
+    return alpha

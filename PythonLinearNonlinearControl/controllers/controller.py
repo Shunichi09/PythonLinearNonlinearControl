@@ -55,17 +55,3 @@ class Controller():
                           self.terminal_state_cost_fn)
 
         return costs
-
-    @staticmethod
-    def gradient_hamiltonian_x(x, u, lam):
-        """ gradient of hamitonian with respect to the state, 
-        """
-        raise NotImplementedError(
-            "Implement gradient of hamitonian with respect to the state")
-
-    @staticmethod
-    def gradient_hamiltonian_u(x, u, lam):
-        """  gradient of hamitonian with respect to the input
-        """
-        raise NotImplementedError(
-            "Implement gradient of hamitonian with respect to the input")

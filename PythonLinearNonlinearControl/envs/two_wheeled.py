@@ -59,7 +59,7 @@ class TwoWheeledConstEnv(Env):
         self.step_count = 0
 
         noise = np.clip(np.random.randn(3), -0.1, 0.1)
-        noise *= 0.01
+        noise *= 0.1
         self.curr_x = np.zeros(self.config["state_size"]) + noise
 
         if init_x is not None:

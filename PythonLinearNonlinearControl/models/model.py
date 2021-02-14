@@ -88,6 +88,11 @@ class Model():
         """
         raise NotImplementedError("Implement the model")
 
+    def x_dot(self, curr_x, u):
+        """ compute x dot
+        """
+        raise NotImplementedError("Implement the model")
+
     def predict_adjoint_traj(self, xs, us, g_xs):
         """
         Args:
@@ -111,7 +116,7 @@ class Model():
         for t in range(pred_len-1, 0, -1):
             prev_lam = \
                 self.predict_adjoint_state(lam, xs[t], us[t],
-                                           g_x=g_xs[t], t=t)
+                                           g_x=g_xs[t])
             # update
             lams = np.concatenate((prev_lam[np.newaxis, :], lams), axis=0)
             lam = prev_lam

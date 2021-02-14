@@ -56,7 +56,7 @@ Following algorithms are implemented in PythonLinearNonlinearControl
     - [script](PythonLinearNonlinearControl/controllers/nmpc.py)
 - [Constrained Nonlinear Model Predictive Control -CGMRES- (NMPC-CGMRES)](https://www.sciencedirect.com/science/article/pii/S0005109897000058)
   - Ref: Ohtsuka, T., & Fujii, H. A. (1997). Real-time optimization algorithm for nonlinear receding-horizon control. Automatica, 33(6), 1147-1154.
-    - [script (Coming soon)]()
+    - [script](PythonLinearNonlinearControl/controllers/nmpc_cgmres.py)
 - [Constrained Nonlinear Model Predictive Control -Newton- (NMPC-Newton)](https://www.sciencedirect.com/science/article/pii/S0005109897000058)
   - Ref: Ohtsuka, T., & Fujii, H. A. (1997). Real-time optimization algorithm for nonlinear receding-horizon control. Automatica, 33(6), 1147-1154.
     - [script (Coming soon)]()

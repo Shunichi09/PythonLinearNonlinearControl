@@ -30,12 +30,12 @@ class iLQR(Controller):
         self.state_cost_fn = config.state_cost_fn
         self.terminal_state_cost_fn = config.terminal_state_cost_fn
         self.input_cost_fn = config.input_cost_fn
-        self.gradient_cost_fn_with_state = config.gradient_cost_fn_with_state
-        self.gradient_cost_fn_with_input = config.gradient_cost_fn_with_input
-        self.hessian_cost_fn_with_state = config.hessian_cost_fn_with_state
-        self.hessian_cost_fn_with_input = config.hessian_cost_fn_with_input
-        self.hessian_cost_fn_with_input_state = \
-            config.hessian_cost_fn_with_input_state
+        self.gradient_cost_fn_state = config.gradient_cost_fn_state
+        self.gradient_cost_fn_input = config.gradient_cost_fn_input
+        self.hessian_cost_fn_state = config.hessian_cost_fn_state
+        self.hessian_cost_fn_input = config.hessian_cost_fn_input
+        self.hessian_cost_fn_input_state = \
+            config.hessian_cost_fn_input_state
 
         # controller parameters
         self.max_iters = config.opt_config["iLQR"]["max_iters"]
@@ -244,31 +244,31 @@ class iLQR(Controller):
                 shape(pred_len, input_size, state_size)
         """
         # l_x.shape = (pred_len+1, state_size)
-        l_x = self.gradient_cost_fn_with_state(pred_xs[:-1],
-                                               g_x[:-1], terminal=False)
+        l_x = self.gradient_cost_fn_state(pred_xs[:-1],
+                                          g_x[:-1], terminal=False)
         terminal_l_x = \
-            self.gradient_cost_fn_with_state(pred_xs[-1],
-                                             g_x[-1], terminal=True)
+            self.gradient_cost_fn_state(pred_xs[-1],
+                                        g_x[-1], terminal=True)
 
         l_x = np.concatenate((l_x, terminal_l_x), axis=0)
 
         # l_u.shape = (pred_len, input_size)
-        l_u = self.gradient_cost_fn_with_input(pred_xs[:-1], sol)
+        l_u = self.gradient_cost_fn_input(pred_xs[:-1], sol)
 
         # l_xx.shape = (pred_len+1, state_size, state_size)
-        l_xx = self.hessian_cost_fn_with_state(pred_xs[:-1],
-                                               g_x[:-1], terminal=False)
+        l_xx = self.hessian_cost_fn_state(pred_xs[:-1],
+                                          g_x[:-1], terminal=False)
         terminal_l_xx = \
-            self.hessian_cost_fn_with_state(pred_xs[-1],
-                                            g_x[-1], terminal=True)
+            self.hessian_cost_fn_state(pred_xs[-1],
+                                       g_x[-1], terminal=True)
 
         l_xx = np.concatenate((l_xx, terminal_l_xx), axis=0)
 
         # l_uu.shape = (pred_len, input_size, input_size)
-        l_uu = self.hessian_cost_fn_with_input(pred_xs[:-1], sol)
+        l_uu = self.hessian_cost_fn_input(pred_xs[:-1], sol)
 
         # l_ux.shape = (pred_len, input_size, state_size)
-        l_ux = self.hessian_cost_fn_with_input_state(pred_xs[:-1], sol)
+        l_ux = self.hessian_cost_fn_input_state(pred_xs[:-1], sol)
 
         return l_x, l_xx, l_u, l_uu, l_ux
 
