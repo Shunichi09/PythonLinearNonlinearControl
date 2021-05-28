@@ -83,25 +83,19 @@ You could know abount our environmets more in [Environments.md](Environments.md)
 ## To install this package
 
 ```
-python setup.py install
-```
-
-or 
-
-```
-pip install .
+$ pip install PythonLinearNonlinearControl
 ```
 
 ## When developing the package
 
 ```
-python setup.py develop
+$ python setup.py develop
 ```
 
 or
 
 ```
-pip install -e .
+$ pip install -e .
 ```
 
 # Basic concepts
