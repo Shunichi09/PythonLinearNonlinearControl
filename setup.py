@@ -13,8 +13,7 @@ setup(
     author_email='quick1st97of@gmail.com',
     install_requires=install_requires,
     url='https://github.com/Shunichi09/PythonLinearNonlinearControl',
-    license='MIT License',
-    packages=find_packages(exclude=('tests')),
+    packages=find_packages(exclude=('tests', 'scripts')),
     setup_requires=setup_requires,
     test_suite='tests',
     tests_require=tests_require
