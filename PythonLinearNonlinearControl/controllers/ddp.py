@@ -8,6 +8,7 @@ from ..envs.cost import calc_cost
 
 logger = getLogger(__name__)
 
+
 class DDP(Controller):
     """ Differential Dynamic Programming
 
@@ -18,11 +19,12 @@ class DDP(Controller):
         https://github.com/studywolf/control, and
         https://github.com/anassinator/ilqr
     """
+
     def __init__(self, config, model):
         """
         """
         super(DDP, self).__init__(config, model)
-            
+
         # model
         self.model = model
 
@@ -30,15 +32,15 @@ class DDP(Controller):
         self.state_cost_fn = config.state_cost_fn
         self.terminal_state_cost_fn = config.terminal_state_cost_fn
         self.input_cost_fn = config.input_cost_fn
-        self.gradient_cost_fn_with_state = config.gradient_cost_fn_with_state
-        self.gradient_cost_fn_with_input = config.gradient_cost_fn_with_input
-        self.hessian_cost_fn_with_state = config.hessian_cost_fn_with_state
-        self.hessian_cost_fn_with_input = config.hessian_cost_fn_with_input
-        self.hessian_cost_fn_with_input_state = \
-            config.hessian_cost_fn_with_input_state
+        self.gradient_cost_fn_state = config.gradient_cost_fn_state
+        self.gradient_cost_fn_input = config.gradient_cost_fn_input
+        self.hessian_cost_fn_state = config.hessian_cost_fn_state
+        self.hessian_cost_fn_input = config.hessian_cost_fn_input
+        self.hessian_cost_fn_input_state = \
+            config.hessian_cost_fn_input_state
 
         # controller parameters
-        self.max_iter = config.opt_config["DDP"]["max_iter"]
+        self.max_iters = config.opt_config["DDP"]["max_iters"]
         self.init_mu = config.opt_config["DDP"]["init_mu"]
         self.mu = self.init_mu
         self.mu_min = config.opt_config["DDP"]["mu_min"]
@@ -56,7 +58,7 @@ class DDP(Controller):
         self.Q = config.Q
         self.R = config.R
         self.Sf = config.Sf
-        
+
         # initialize
         self.prev_sol = np.zeros((self.pred_len, self.input_size))
 
@@ -65,7 +67,7 @@ class DDP(Controller):
         """
         logger.debug("Clear Sol")
         self.prev_sol = np.zeros((self.pred_len, self.input_size))
-    
+
     def obtain_sol(self, curr_x, g_xs):
         """ calculate the optimal inputs
 
@@ -86,29 +88,29 @@ class DDP(Controller):
         # line search param
         alphas = 1.1**(-np.arange(10)**2)
 
-        while opt_count < self.max_iter:
+        while opt_count < self.max_iters:
             accepted_sol = False
 
-            # forward    
+            # forward
             if update_sol == True:
                 pred_xs, cost, f_x, f_u, f_xx, f_ux, f_uu,\
-                l_x, l_xx, l_u, l_uu, l_ux = \
+                    l_x, l_xx, l_u, l_uu, l_ux = \
                     self.forward(curr_x, g_xs, sol)
                 update_sol = False
-            
+
             try:
                 # backward
-                k, K = self.backward(f_x, f_u, f_xx, f_ux, f_uu, \
+                k, K = self.backward(f_x, f_u, f_xx, f_ux, f_uu,
                                      l_x, l_xx, l_u, l_uu, l_ux)
 
                 # line search
                 for alpha in alphas:
                     new_pred_xs, new_sol = \
                         self.calc_input(k, K, pred_xs, sol, alpha)
-                    
+
                     new_cost = calc_cost(new_pred_xs[np.newaxis, :, :],
                                          new_sol[np.newaxis, :, :],
-                                         g_xs[np.newaxis, :, :], 
+                                         g_xs[np.newaxis, :, :],
                                          self.state_cost_fn,
                                          self.input_cost_fn,
                                          self.terminal_state_cost_fn)
@@ -131,15 +133,15 @@ class DDP(Controller):
                         # accept the solution
                         accepted_sol = True
                         break
-                    
+
             except np.linalg.LinAlgError as e:
                 logger.debug("Non ans : {}".format(e))
-            
+
             if not accepted_sol:
                 # increase regularization term.
                 self.delta = max(1.0, self.delta) * self.init_delta
                 self.mu = max(self.mu_min, self.mu * self.delta)
-                logger.debug("Update regularization term to {}"\
+                logger.debug("Update regularization term to {}"
                              .format(self.mu))
                 if self.mu >= self.mu_max:
                     logger.debug("Reach Max regularization term")
@@ -156,7 +158,7 @@ class DDP(Controller):
         self.prev_sol[-1] = sol[-1]  # last use the terminal input
 
         return sol[0]
-    
+
     def calc_input(self, k, K, pred_xs, sol, alpha):
         """ calc input trajectory by using k and K
 
@@ -183,8 +185,8 @@ class DDP(Controller):
 
         for t in range(pred_len):
             new_sol[t] = sol[t] \
-                         + alpha * k[t] \
-                         + np.dot(K[t], (new_pred_xs[t] - pred_xs[t]))
+                + alpha * k[t] \
+                + np.dot(K[t], (new_pred_xs[t] - pred_xs[t]))
             new_pred_xs[t+1] = self.model.predict_next_state(new_pred_xs[t],
                                                              new_sol[t])
 
@@ -227,7 +229,7 @@ class DDP(Controller):
                               g_xs)
 
         # calc gradinet in batch
-        f_x = self.model.calc_f_x(pred_xs[:-1], sol, self.dt) 
+        f_x = self.model.calc_f_x(pred_xs[:-1], sol, self.dt)
         f_u = self.model.calc_f_u(pred_xs[:-1], sol, self.dt)
         # calc hessian in batch
         f_xx = self.model.calc_f_xx(pred_xs[:-1], sol, self.dt)
@@ -237,13 +239,13 @@ class DDP(Controller):
         # gradint of costs
         l_x, l_xx, l_u, l_uu, l_ux = \
             self._calc_gradient_hessian_cost(pred_xs, g_xs, sol)
-        
+
         return pred_xs, cost, f_x, f_u, f_xx, f_ux, f_uu, \
             l_x, l_xx, l_u, l_uu, l_ux
 
     def _calc_gradient_hessian_cost(self, pred_xs, g_x, sol):
         """ calculate gradient and hessian of model and cost fn
-        
+
         Args:
             pred_xs (numpy.ndarray): predict traj,
                 shape(pred_len+1, state_size)
@@ -262,31 +264,31 @@ class DDP(Controller):
                 shape(pred_len, input_size, state_size)
         """
         # l_x.shape = (pred_len+1, state_size)
-        l_x = self.gradient_cost_fn_with_state(pred_xs[:-1],
-                                               g_x[:-1], terminal=False)
+        l_x = self.gradient_cost_fn_state(pred_xs[:-1],
+                                          g_x[:-1], terminal=False)
         terminal_l_x = \
-            self.gradient_cost_fn_with_state(pred_xs[-1],
-                                             g_x[-1], terminal=True)
+            self.gradient_cost_fn_state(pred_xs[-1],
+                                        g_x[-1], terminal=True)
 
-        l_x = np.concatenate((l_x, terminal_l_x), axis=0) 
+        l_x = np.concatenate((l_x, terminal_l_x), axis=0)
 
         # l_u.shape = (pred_len, input_size)
-        l_u = self.gradient_cost_fn_with_input(pred_xs[:-1], sol)
+        l_u = self.gradient_cost_fn_input(pred_xs[:-1], sol)
 
         # l_xx.shape = (pred_len+1, state_size, state_size)
-        l_xx = self.hessian_cost_fn_with_state(pred_xs[:-1],
-                                               g_x[:-1], terminal=False)
+        l_xx = self.hessian_cost_fn_state(pred_xs[:-1],
+                                          g_x[:-1], terminal=False)
         terminal_l_xx = \
-            self.hessian_cost_fn_with_state(pred_xs[-1],
-                                            g_x[-1], terminal=True)
+            self.hessian_cost_fn_state(pred_xs[-1],
+                                       g_x[-1], terminal=True)
 
         l_xx = np.concatenate((l_xx, terminal_l_xx), axis=0)
-        
+
         # l_uu.shape = (pred_len, input_size, input_size)
-        l_uu = self.hessian_cost_fn_with_input(pred_xs[:-1], sol)
+        l_uu = self.hessian_cost_fn_input(pred_xs[:-1], sol)
 
         # l_ux.shape = (pred_len, input_size, state_size)
-        l_ux = self.hessian_cost_fn_with_input_state(pred_xs[:-1], sol)
+        l_ux = self.hessian_cost_fn_input_state(pred_xs[:-1], sol)
 
         return l_x, l_xx, l_u, l_uu, l_ux
 
@@ -321,7 +323,7 @@ class DDP(Controller):
         # get size
         (_, state_size, _) = f_x.shape
 
-        # initialzie    
+        # initialzie
         V_x = l_x[-1]
         V_xx = l_xx[-1]
         k = np.zeros((self.pred_len, self.input_size))
@@ -388,7 +390,7 @@ class DDP(Controller):
         """
         # get size
         state_size = len(l_x)
-        
+
         Q_x = l_x + np.dot(f_x.T, V_x)
         Q_u = l_u + np.dot(f_u.T, V_x)
         Q_xx = l_xx + np.dot(np.dot(f_x.T, V_xx), f_x)

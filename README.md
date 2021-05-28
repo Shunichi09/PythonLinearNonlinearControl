@@ -53,10 +53,10 @@ Following algorithms are implemented in PythonLinearNonlinearControl
     - [script](PythonLinearNonlinearControl/controllers/ddp.py)
 - [Unconstrained Nonlinear Model Predictive Control (NMPC)](https://www.sciencedirect.com/science/article/pii/S0005109897000058)
   - Ref: Ohtsuka, T., & Fujii, H. A. (1997). Real-time optimization algorithm for nonlinear receding-horizon control. Automatica, 33(6), 1147-1154.
-    - [script (Coming soon)]()
+    - [script](PythonLinearNonlinearControl/controllers/nmpc.py)
 - [Constrained Nonlinear Model Predictive Control -CGMRES- (NMPC-CGMRES)](https://www.sciencedirect.com/science/article/pii/S0005109897000058)
   - Ref: Ohtsuka, T., & Fujii, H. A. (1997). Real-time optimization algorithm for nonlinear receding-horizon control. Automatica, 33(6), 1147-1154.
-    - [script (Coming soon)]()
+    - [script](PythonLinearNonlinearControl/controllers/nmpc_cgmres.py)
 - [Constrained Nonlinear Model Predictive Control -Newton- (NMPC-Newton)](https://www.sciencedirect.com/science/article/pii/S0005109897000058)
   - Ref: Ohtsuka, T., & Fujii, H. A. (1997). Real-time optimization algorithm for nonlinear receding-horizon control. Automatica, 33(6), 1147-1154.
     - [script (Coming soon)]()
@@ -71,6 +71,7 @@ There are 4 example environments, "FirstOrderLag", "TwoWheeledConst", "TwoWheele
 | Two wheeled System (Constant Goal) | x | ✓ | 3 | 2 | 
 | Two wheeled System (Moving Goal) | x | ✓ | 3 | 2 | 
 | Cartpole (Swing up) | x | ✓ | 4 | 1 | 
+| Nonlinear Sample System Env | x | ✓ | 2 | 1 | 
 
 All states and inputs of environments are continuous.
 **It should be noted that the algorithms for linear model could be applied to nonlinear enviroments if you have linealized the model of nonlinear environments.**
@@ -184,6 +185,8 @@ save_plot_data(history_x, history_u, history_g=history_g)
 animator = Animator(env)
 animator.draw(history_x, history_g)
 ```
+**It should be noted that the controller parameters like Q, R and Sf strongly affect the performence of the controller.
+Please, check these parameters before you run the simulation.**
 
 ## Run Example Script
 

@@ -8,9 +8,11 @@ import matplotlib.animation as animation
 
 logger = getLogger(__name__)
 
+
 class Animator():
     """ animation class
     """
+
     def __init__(self, env, args=None):
         """
         """
@@ -34,7 +36,7 @@ class Animator():
         # make fig
         self.anim_fig = plt.figure()
 
-        # axis        
+        # axis
         self.axis = self.anim_fig.add_subplot(111)
         self.axis.set_aspect('equal', adjustable='box')
 
@@ -65,12 +67,12 @@ class Animator():
         """
         # set up animation figures
         self._setup()
-        _update_img = lambda i: self._update_img(i, history_x, history_g_x)
+        def _update_img(i): return self._update_img(i, history_x, history_g_x)
 
         # Set up formatting for the movie files
         Writer = animation.writers['ffmpeg']
         writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
-        
+
         # call funcanimation
         ani = FuncAnimation(
             self.anim_fig,
@@ -79,6 +81,6 @@ class Animator():
         # save animation
         path = os.path.join(self.result_dir, self.controller_type,
                             "animation-" + self.env_name + ".mp4")
-        logger.info("Saved Animation to {} ...".format(path))        
+        logger.info("Saved Animation to {} ...".format(path))
 
         ani.save(path, writer=writer)

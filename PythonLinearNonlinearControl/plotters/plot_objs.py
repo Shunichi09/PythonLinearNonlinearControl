@@ -5,9 +5,10 @@ import matplotlib.pyplot as plt
 
 from ..common.utils import rotate_pos
 
+
 def circle(center_x, center_y, radius, start=0., end=2*np.pi, n_point=100):
     """ Create circle matrix
-    
+
     Args:
         center_x (float): the center x position of the circle
         center_y (float): the center y position of the circle
@@ -29,6 +30,7 @@ def circle(center_x, center_y, radius, start=0., end=2*np.pi, n_point=100):
 
     return np.array(circle_xs), np.array(circle_ys)
 
+
 def circle_with_angle(center_x, center_y, radius, angle):
     """ Create circle matrix with angle line matrix
 
@@ -49,6 +51,7 @@ def circle_with_angle(center_x, center_y, radius, angle):
     angle_y = np.array([center_y, center_y + np.sin(angle) * radius])
 
     return circle_x, circle_y, angle_x, angle_y
+
 
 def square(center_x, center_y, shape, angle):
     """ Create square
@@ -74,8 +77,9 @@ def square(center_x, center_y, shape, angle):
     trans_points = rotate_pos(square_xy, angle)
     # translation
     trans_points += np.array([center_x, center_y])
-    
+
     return trans_points[:, 0], trans_points[:, 1]
+
 
 def square_with_angle(center_x, center_y, shape, angle):
     """ Create square with angle line

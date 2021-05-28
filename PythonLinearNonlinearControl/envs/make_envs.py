@@ -2,6 +2,8 @@ from .first_order_lag import FirstOrderLagEnv
 from .two_wheeled import TwoWheeledConstEnv
 from .two_wheeled import TwoWheeledTrackEnv
 from .cartpole import CartPoleEnv
+from .nonlinear_sample_system import NonlinearSampleSystemEnv
+
 
 def make_env(args):
 
@@ -13,5 +15,7 @@ def make_env(args):
         return TwoWheeledTrackEnv()
     elif args.env == "CartPole":
         return CartPoleEnv()
-    
+    elif args.env == "NonlinearSample":
+        return NonlinearSampleSystemEnv()
+
     raise NotImplementedError("There is not {} Env".format(args.env))
